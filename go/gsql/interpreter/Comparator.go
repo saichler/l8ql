@@ -6,10 +6,10 @@ import (
 
 	"github.com/saichler/l8ql/go/gsql/interpreter/comparators"
 	"github.com/saichler/l8ql/go/gsql/parser"
+	"github.com/saichler/l8reflect/go/reflect/properties"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/types/l8api"
 	"github.com/saichler/l8types/go/types/l8reflect"
-	"github.com/saichler/l8reflect/go/reflect/properties"
 )
 
 type Comparator struct {
@@ -124,6 +124,16 @@ func (this *Comparator) keyOf() string {
 		return this.left
 	}
 	if this.rightProperty == nil {
+		return this.right
+	}
+	return ""
+}
+
+func (this *Comparator) ValueForParameter(name string) string {
+	if this.right == name {
+		return this.left
+	}
+	if this.left == name {
 		return this.right
 	}
 	return ""

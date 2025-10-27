@@ -100,3 +100,19 @@ func (this *Condition) keyOf() string {
 	}
 	return ""
 }
+
+func (this *Condition) ValueForParameter(name string) string {
+	if this.comparator != nil {
+		val := this.comparator.ValueForParameter(name)
+		if val != "" {
+			return val
+		}
+	}
+	if this.next != nil {
+		val := this.next.ValueForParameter(name)
+		if val != "" {
+			return val
+		}
+	}
+	return ""
+}

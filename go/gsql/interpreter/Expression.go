@@ -139,3 +139,25 @@ func (this *Expression) keyOf() string {
 	}
 	return ""
 }
+
+func (this *Expression) ValueForParameter(name string) string {
+	if this.condition != nil {
+		val := this.condition.ValueForParameter(name)
+		if val != "" {
+			return val
+		}
+	}
+	if this.child != nil {
+		val := this.child.ValueForParameter(name)
+		if val != "" {
+			return val
+		}
+	}
+	if this.next != nil {
+		val := this.next.ValueForParameter(name)
+		if val != "" {
+			return val
+		}
+	}
+	return ""
+}

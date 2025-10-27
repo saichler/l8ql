@@ -1,9 +1,10 @@
 package tests
 
 import (
+	"testing"
+
 	. "github.com/saichler/l8test/go/infra/t_resources"
 	"github.com/saichler/l8types/go/testtypes"
-	"testing"
 )
 
 func TestQueryValidation(t *testing.T) {
@@ -116,5 +117,22 @@ func TestDeepMatchMultiValueSlice(t *testing.T) {
 	node.MyModelSlice = append(node.MyModelSlice, pb)
 	if !checkMatch("Select myString fRom testproto wHere MyModelSlice.mysubs.myString=Subnode6-0-index-0", node, true, t) {
 		return
+	}
+}
+
+func TestValueOf(t *testing.T) {
+	q, _, e := createQuery("Select * from testproto wHere mystring=v1 and myint32=2")
+	if e != nil {
+		Log.Fail(t, e)
+		return
+	}
+	v1 := q.ValueForParameter("mystring")
+	if v1 != "v1" {
+		Log.Fail(t, "V1 does not match")
+		return
+	}
+	v2 := q.ValueForParameter("myint32")
+	if v2 != "2" {
+		Log.Fail(t, "V2 does not match")
 	}
 }

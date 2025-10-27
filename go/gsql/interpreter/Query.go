@@ -268,3 +268,10 @@ func (this *Query) Hash() string {
 	h.Write(buff.Bytes())
 	return hex.EncodeToString(h.Sum(nil))
 }
+
+func (this *Query) ValueForParameter(name string) string {
+	if this.where == nil {
+		return ""
+	}
+	return this.where.ValueForParameter(name)
+}
