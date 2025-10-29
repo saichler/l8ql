@@ -25,6 +25,7 @@ type parsed struct {
 	limit_      string
 	page_       string
 	matchcase_  string
+	mapreduce_  string
 }
 
 const (
@@ -37,9 +38,10 @@ const (
 	Limit      = "limit"
 	Page       = "page"
 	MatchCase  = "match-case"
+	MapReduce  = "MapReduce"
 )
 
-var words = []string{Select, From, Where, SortBy, Descending, Ascending, Limit, Page, MatchCase}
+var words = []string{Select, From, Where, SortBy, Descending, Ascending, Limit, Page, MatchCase, MapReduce}
 
 func (this *PQuery) Query() *l8api.L8Query {
 	return &this.pquery
@@ -84,6 +86,7 @@ func (this *PQuery) split() *parsed {
 	data.page_ = getTag(sql, Page)
 	data.sortby_ = getTag(sql, SortBy)
 	data.matchcase_ = getBoolTag(sql, MatchCase)
+	data.mapreduce_ = getBoolTag(sql, MapReduce)
 	return data
 }
 
@@ -167,6 +170,9 @@ func (this *PQuery) init() error {
 	}
 	if p.matchcase_ != "" {
 		this.pquery.MatchCase = true
+	}
+	if p.mapreduce_ != "" {
+		this.pquery.MapReduce = true
 	}
 	return nil
 }

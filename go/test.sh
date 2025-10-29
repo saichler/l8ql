@@ -12,12 +12,11 @@ go mod init
 GOPROXY=direct GOPRIVATE=github.com go mod tidy
 go mod vendor
 
-cp ./vendor/github.com/saichler/l8utils/go/utils/resources/build-test-security.sh .
-chmod +x ./build-test-security.sh
-rm -rf vendor
-./build-test-security.sh
-rm -rf ./build-test-security.sh
-go mod vendor
+echo "******************************************************"
+echo "* Make sure you built security before running this tests"
+echo "* Shallow Security exist in https://github.com/saichler/l8utils/tree/main/go/utils/shallow_security/build.sh"
+echo "******************************************************"
+read -n 1 -s -r -p "Press any key to continue..."
 
 # Run unit tests with coverage
 go test -tags=unit -v -coverpkg=./gsql/... -coverprofile=cover.html ./... --failfast

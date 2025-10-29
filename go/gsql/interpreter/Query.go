@@ -255,6 +255,10 @@ func (this *Query) Text() string {
 	return this.query.Text
 }
 
+func (this *Query) MapReduce() bool {
+	return this.query.MapReduce
+}
+
 func (this *Query) Hash() string {
 	buff := bytes.Buffer{}
 	if this.rootType != nil {
