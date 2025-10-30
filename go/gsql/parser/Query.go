@@ -38,7 +38,7 @@ const (
 	Limit      = "limit"
 	Page       = "page"
 	MatchCase  = "match-case"
-	MapReduce  = "MapReduce"
+	MapReduce  = "mapreduce"
 )
 
 var words = []string{Select, From, Where, SortBy, Descending, Ascending, Limit, Page, MatchCase, MapReduce}

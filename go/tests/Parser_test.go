@@ -2,10 +2,11 @@ package tests
 
 import (
 	"fmt"
-	. "github.com/saichler/l8ql/go/gsql/parser"
-	. "github.com/saichler/l8test/go/infra/t_resources"
 	"strconv"
 	"testing"
+
+	. "github.com/saichler/l8ql/go/gsql/parser"
+	. "github.com/saichler/l8test/go/infra/t_resources"
 )
 
 func TestQuery01(t *testing.T) {
@@ -200,5 +201,18 @@ func testExpression(q *PQuery, expected string, t *testing.T) {
 	if StringExpression(q.Query().Criteria) != expected {
 		Log.Fail(t, "Expected: ", expected)
 		Log.Fail(t, "But got : ", StringExpression(q.Query().Criteria))
+	}
+}
+
+func TestParseMapReduce(t *testing.T) {
+	q, e := NewQuery("select * from l8file where path=\"*\" mapreduce true", Log)
+	if e != nil {
+		Log.Fail(t, e)
+		return
+	}
+	v := q.Query().Criteria.Condition.Comparator.Right
+	if v != "*" {
+		Log.Fail(t, v)
+		return
 	}
 }
