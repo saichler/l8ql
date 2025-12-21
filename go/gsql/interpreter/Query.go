@@ -64,7 +64,7 @@ func NewFromQuery(query *l8api.L8Query, resources ifs.IResources) (*Query, error
 	iQuery.where = expr
 
 	if iQuery.sortBy != "" {
-		sortByProperty, er := properties.PropertyOf(iQuery.sortBy, resources)
+		sortByProperty, er := properties.PropertyOf(rootTable.TypeName+"."+iQuery.sortBy, resources)
 		if er != nil {
 			return nil, errors.New(er.Error())
 		}

@@ -61,7 +61,7 @@ func NewCompare(ws string) (*l8api.L8Comparator, error) {
 		if loc != -1 {
 			cmp := &l8api.L8Comparator{}
 			cmp.Left = strings.TrimSpace(strings.ToLower(ws[0:loc]))
-			cmp.Right = strings.TrimSpace(strings.ToLower(ws[loc+len(op):]))
+			cmp.Right = stripQuotes(strings.TrimSpace(ws[loc+len(op):]))
 			cmp.Oper = string(op)
 			if validateValue(cmp.Left) != "" {
 				return nil, errors.New(validateValue(cmp.Left))
@@ -82,4 +82,11 @@ func validateValue(ws string) string {
 		return "Value " + ws + " contain illegale brackets."
 	}
 	return ""
+}
+
+func stripQuotes(s string) string {
+	if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
+		return s[1 : len(s)-1]
+	}
+	return strings.ToLower(s)
 }
