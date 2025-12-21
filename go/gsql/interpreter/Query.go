@@ -268,6 +268,9 @@ func (this *Query) Hash() string {
 		buff.WriteString(this.where.String())
 	}
 	buff.WriteString(this.sortBy)
+	if this.descending {
+		buff.WriteString("true")
+	}
 	h := md5.New()
 	h.Write(buff.Bytes())
 	return hex.EncodeToString(h.Sum(nil))
