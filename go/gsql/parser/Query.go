@@ -1,3 +1,36 @@
+/*
+© 2025 Sharon Aicler (saichler@gmail.com)
+
+Layer 8 Ecosystem is licensed under the Apache License, Version 2.0.
+You may obtain a copy of the License at:
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+// Package parser provides functionality for parsing L8QL (Layer 8 Query Language) query strings
+// into structured protobuf message objects. L8QL is a SQL-like query language designed for
+// querying Go data structures.
+//
+// The parser supports the following clauses:
+//   - SELECT: Specify which properties/columns to retrieve (comma-separated)
+//   - FROM: Specify the root type to query
+//   - WHERE: Filter conditions with comparators (=, !=, >, <, >=, <=, in, not in)
+//   - SORT-BY: Property to sort results by
+//   - DESCENDING/ASCENDING: Sort order modifiers
+//   - LIMIT: Maximum number of results (up to 1000)
+//   - PAGE: Pagination offset
+//   - MATCH-CASE: Enable case-sensitive matching
+//   - MAPREDUCE: Enable map-reduce mode
+//
+// Example query:
+//
+//	"select name,age from Person where age>18 and status='active' sort-by name limit 10"
 package parser
 
 import (
@@ -10,11 +43,15 @@ import (
 	"strings"
 )
 
+// PQuery is the parsed query wrapper that holds the parsed L8Query protobuf message
+// along with a logger for error reporting during parsing.
 type PQuery struct {
 	log    ifs.ILogger
 	pquery l8api.L8Query
 }
 
+// parsed is an internal struct that holds the raw parsed values extracted from
+// the query string before they are converted to their final typed representations.
 type parsed struct {
 	select_     []string
 	from_       string
@@ -28,25 +65,32 @@ type parsed struct {
 	mapreduce_  string
 }
 
+// Query clause keywords used for parsing L8QL query strings.
 const (
-	Select     = "select"
-	From       = "from"
-	Where      = "where"
-	SortBy     = "sort-by"
-	Descending = "descending"
-	Ascending  = "ascending"
-	Limit      = "limit"
-	Page       = "page"
-	MatchCase  = "match-case"
-	MapReduce  = "mapreduce"
+	Select     = "select"     // SELECT clause keyword for specifying properties to retrieve
+	From       = "from"       // FROM clause keyword for specifying the root type
+	Where      = "where"      // WHERE clause keyword for filter conditions
+	SortBy     = "sort-by"    // SORT-BY clause keyword for ordering results
+	Descending = "descending" // DESCENDING keyword for descending sort order
+	Ascending  = "ascending"  // ASCENDING keyword for ascending sort order
+	Limit      = "limit"      // LIMIT clause keyword for maximum results
+	Page       = "page"       // PAGE clause keyword for pagination
+	MatchCase  = "match-case" // MATCH-CASE keyword for case-sensitive matching
+	MapReduce  = "mapreduce"  // MAPREDUCE keyword for enabling map-reduce mode
 )
 
+// words contains all query keywords used for parsing clause boundaries.
 var words = []string{Select, From, Where, SortBy, Descending, Ascending, Limit, Page, MatchCase, MapReduce}
 
+// Query returns a pointer to the underlying L8Query protobuf message
+// that was parsed from the query string.
 func (this *PQuery) Query() *l8api.L8Query {
 	return &this.pquery
 }
 
+// NewQuery parses an L8QL query string and returns a new PQuery instance.
+// The query string should follow L8QL syntax with clauses like SELECT, FROM, WHERE, etc.
+// Returns an error if the query string contains invalid syntax or values.
 func NewQuery(query string, log ifs.ILogger) (*PQuery, error) {
 	cwql := &PQuery{}
 	cwql.pquery.Text = query
@@ -55,6 +99,9 @@ func NewQuery(query string, log ifs.ILogger) (*PQuery, error) {
 	return cwql, e
 }
 
+// TrimAndLowerNoKeys trims whitespace and converts the query string to lowercase,
+// but preserves the original case for content within square brackets (keys).
+// This allows for case-insensitive keyword matching while maintaining case-sensitive key values.
 func TrimAndLowerNoKeys(sql string) string {
 	buff := bytes.Buffer{}
 	sql = strings.TrimSpace(sql)

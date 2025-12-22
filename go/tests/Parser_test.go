@@ -1,3 +1,17 @@
+/*
+© 2025 Sharon Aicler (saichler@gmail.com)
+
+Layer 8 Ecosystem is licensed under the Apache License, Version 2.0.
+You may obtain a copy of the License at:
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 package tests
 
 import (
@@ -9,6 +23,7 @@ import (
 	. "github.com/saichler/l8test/go/infra/t_resources"
 )
 
+// TestQuery01 tests basic query parsing with SELECT, FROM, and WHERE clauses.
 func TestQuery01(t *testing.T) {
 	q, e := NewQuery("Select column1,column2 fRom table1 wHere 1=2", Log)
 	if e != nil {
@@ -170,6 +185,7 @@ func TestQuery(t *testing.T) {
 	testExpression(q, "(1=2) or (((3!=4 and 5<6)) and (7>8)) or (((9=10)) and (11=12))", t)
 }
 
+// testTables verifies that the query has a root type defined.
 func testTables(q *PQuery, expected string, t *testing.T) {
 	if q.Query().RootType == "" {
 		Log.Fail(t, "Expected ", expected)
@@ -177,6 +193,7 @@ func testTables(q *PQuery, expected string, t *testing.T) {
 	}
 }
 
+// testColumns verifies that the query has the expected columns selected.
 func testColumns(q *PQuery, expected []string, t *testing.T) {
 	if len(q.Query().Properties) != len(expected) {
 		Log.Fail(t, "Expected "+strconv.Itoa(len(expected)), " columns but got ", strconv.Itoa(len(q.Query().Properties)))
@@ -197,6 +214,7 @@ func testColumns(q *PQuery, expected []string, t *testing.T) {
 	}
 }
 
+// testExpression verifies that the query's WHERE clause expression matches expected.
 func testExpression(q *PQuery, expected string, t *testing.T) {
 	if StringExpression(q.Query().Criteria) != expected {
 		Log.Fail(t, "Expected: ", expected)
@@ -204,6 +222,7 @@ func testExpression(q *PQuery, expected string, t *testing.T) {
 	}
 }
 
+// TestParseMapReduce tests parsing of queries with mapreduce clause.
 func TestParseMapReduce(t *testing.T) {
 	q, e := NewQuery("select * from l8file where path=\"*\" mapreduce true", Log)
 	if e != nil {

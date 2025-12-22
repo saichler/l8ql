@@ -1,3 +1,17 @@
+/*
+© 2025 Sharon Aicler (saichler@gmail.com)
+
+Layer 8 Ecosystem is licensed under the Apache License, Version 2.0.
+You may obtain a copy of the License at:
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 package parser
 
 import (
@@ -8,6 +22,9 @@ import (
 	"github.com/saichler/l8types/go/types/l8api"
 )
 
+// StringExpression converts an L8Expression tree into its string representation.
+// It recursively processes child expressions and concatenates them with their
+// AND/OR operators to recreate the original expression string.
 func StringExpression(this *l8api.L8Expression) string {
 	buff := bytes.Buffer{}
 	if this.Condition != nil {
@@ -28,6 +45,9 @@ func StringExpression(this *l8api.L8Expression) string {
 	return buff.String()
 }
 
+// VisualizeExpression creates a human-readable, indented visualization of an L8Expression tree.
+// The lvl parameter controls the indentation level for nested expressions.
+// This is primarily useful for debugging and understanding the parsed expression structure.
 func VisualizeExpression(this *l8api.L8Expression, lvl int) string {
 	buff := bytes.Buffer{}
 	buff.WriteString(space(lvl))
@@ -47,6 +67,8 @@ func VisualizeExpression(this *l8api.L8Expression, lvl int) string {
 	return buff.String()
 }
 
+// space generates an indentation string with a pipe prefix and dashes
+// based on the nesting level. Used by visualization functions.
 func space(lvl int) string {
 	buff := bytes.Buffer{}
 	buff.WriteString("|")
@@ -56,6 +78,9 @@ func space(lvl int) string {
 	return buff.String()
 }
 
+// parseExpression is the main entry point for parsing WHERE clause expressions.
+// It handles expressions with or without parentheses and delegates to specialized
+// parsing functions based on the structure of the expression.
 func parseExpression(ws string) (*l8api.L8Expression, error) {
 	initComparators()
 	ws = strings.TrimSpace(ws)
@@ -71,6 +96,8 @@ func parseExpression(ws string) (*l8api.L8Expression, error) {
 	return parseWithBrackets(ws, bo)
 }
 
+// parseWithBrackets handles expressions that start with an opening parenthesis.
+// It recursively parses the content within the brackets and any following expressions.
 func parseWithBrackets(ws string, bo int) (*l8api.L8Expression, error) {
 	be, e := getBE(ws, bo)
 	if e != nil {
@@ -99,6 +126,8 @@ func parseWithBrackets(ws string, bo int) (*l8api.L8Expression, error) {
 	return expr, nil
 }
 
+// parseBeforeBrackets handles expressions where content appears before the first opening parenthesis.
+// It parses the prefix conditions and links them to the bracketed expression that follows.
 func parseBeforeBrackets(ws string, bo int) (*l8api.L8Expression, error) {
 	prefix := ws[0:bo]
 	op, loc, e := getLastConditionOp(prefix)
@@ -118,6 +147,8 @@ func parseBeforeBrackets(ws string, bo int) (*l8api.L8Expression, error) {
 	return expr, nil
 }
 
+// parseNoBrackets handles simple expressions without parentheses.
+// It creates an expression containing just a condition chain.
 func parseNoBrackets(ws string) (*l8api.L8Expression, error) {
 	expr := &l8api.L8Expression{}
 	condition, e := NewCondition(ws)
@@ -128,10 +159,15 @@ func parseNoBrackets(ws string) (*l8api.L8Expression, error) {
 	return expr, nil
 }
 
+// getBO (get Bracket Open) finds the position of the first opening parenthesis in the string.
+// Returns -1 if no opening parenthesis is found.
 func getBO(ws string) int {
 	return strings.Index(ws, "(")
 }
 
+// getBE (get Bracket End) finds the matching closing parenthesis for an opening parenthesis.
+// It counts nested brackets to find the correct matching close bracket.
+// Returns an error if no matching closing bracket is found.
 func getBE(ws string, bo int) (int, error) {
 	count := 0
 	for i := bo; i < len(ws); i++ {
