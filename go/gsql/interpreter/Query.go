@@ -322,10 +322,11 @@ func (this *Query) MapReduce() bool {
 }
 
 // Hash returns an MD5 hash of the query for caching and deduplication.
-// The hash is based on the root type, WHERE clause, sort-by, and descending fields.
+// The hash is based on the normalized query text (trimmed and lowercased).
 func (this *Query) Hash() string {
+	text := strings.TrimSpace(strings.ToLower(this.Text()))
 	h := md5.New()
-	h.Write([]byte(this.Text()))
+	h.Write([]byte(text))
 	return hex.EncodeToString(h.Sum(nil))
 }
 
