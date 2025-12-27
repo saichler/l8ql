@@ -41,7 +41,7 @@ import (
 // It holds all the parsed and resolved components needed for query execution,
 // including the root type, property mappings, filter expressions, and query options.
 type Query struct {
-	rootType       *l8reflect.L8Node       // The root type node from the introspector
+	rootType       *l8reflect.L8Node        // The root type node from the introspector
 	propertiesMap  map[string]ifs.IProperty // Map of property names to property accessors
 	properties     []ifs.IProperty          // Ordered list of selected properties
 	where          *Expression              // The WHERE clause expression for filtering
@@ -324,19 +324,8 @@ func (this *Query) MapReduce() bool {
 // Hash returns an MD5 hash of the query for caching and deduplication.
 // The hash is based on the root type, WHERE clause, sort-by, and descending fields.
 func (this *Query) Hash() string {
-	buff := bytes.Buffer{}
-	if this.rootType != nil {
-		buff.WriteString(this.rootType.TypeName)
-	}
-	if this.where != nil {
-		buff.WriteString(this.where.String())
-	}
-	buff.WriteString(this.sortBy)
-	if this.descending {
-		buff.WriteString("true")
-	}
 	h := md5.New()
-	h.Write(buff.Bytes())
+	h.Write([]byte(this.Text()))
 	return hex.EncodeToString(h.Sum(nil))
 }
 
