@@ -220,7 +220,7 @@ func (this *Query) initColumns(query *l8api.L8Query, resources ifs.IResources) e
 // the root table name if not already present.
 func propertyPath(colName, rootTable string) string {
 	rootTable = strings.ToLower(rootTable)
-	if strings.Contains(colName, rootTable) {
+	if strings.Contains(colName, ".") {
 		return colName
 	}
 	buff := bytes.Buffer{}
