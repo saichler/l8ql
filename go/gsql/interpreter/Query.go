@@ -220,14 +220,14 @@ func (this *Query) initColumns(query *l8api.L8Query, resources ifs.IResources) e
 // the root table name if not already present.
 func propertyPath(colName, rootTable string) string {
 	rootTable = strings.ToLower(rootTable)
-	if strings.Contains(colName, ".") {
+	rootTablePrefix := bytes.Buffer{}
+	rootTablePrefix.WriteString(rootTable)
+	rootTablePrefix.WriteString(".")
+	if strings.Contains(colName, rootTablePrefix.String()) {
 		return colName
 	}
-	buff := bytes.Buffer{}
-	buff.WriteString(rootTable)
-	buff.WriteString(".")
-	buff.WriteString(colName)
-	return buff.String()
+	rootTablePrefix.WriteString(colName)
+	return rootTablePrefix.String()
 }
 
 // match evaluates whether the given object matches the query's WHERE clause.

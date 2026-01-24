@@ -82,7 +82,6 @@ func space(lvl int) string {
 // It handles expressions with or without parentheses and delegates to specialized
 // parsing functions based on the structure of the expression.
 func parseExpression(ws string) (*l8api.L8Expression, error) {
-	initComparators()
 	ws = strings.TrimSpace(ws)
 	bo := getBO(ws)
 	if bo == -1 {

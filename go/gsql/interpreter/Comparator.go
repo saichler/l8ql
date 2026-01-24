@@ -46,19 +46,16 @@ type Comparable interface {
 // comparables maps comparison operations to their implementations.
 var comparables = make(map[parser.ComparatorOperation]Comparable)
 
-// initComparables initializes the comparables map with all supported comparison implementations.
-// This is called lazily on first use.
-func initComparables() {
-	if len(comparables) == 0 {
-		comparables[parser.Eq] = comparators.NewEqual()
-		comparables[parser.Neq] = comparators.NewNotEqual()
-		comparables[parser.NOTIN] = comparators.NewNotIN()
-		comparables[parser.IN] = comparators.NewIN()
-		comparables[parser.GT] = comparators.NewGreaterThan()
-		comparables[parser.LT] = comparators.NewLessThan()
-		comparables[parser.GTEQ] = comparators.NewGreaterThanOrEqual()
-		comparables[parser.LTEQ] = comparators.NewLessThanOrEqual()
-	}
+// init initializes the comparables map with all supported comparison implementations.
+func init() {
+	comparables[parser.Eq] = comparators.NewEqual()
+	comparables[parser.Neq] = comparators.NewNotEqual()
+	comparables[parser.NOTIN] = comparators.NewNotIN()
+	comparables[parser.IN] = comparators.NewIN()
+	comparables[parser.GT] = comparators.NewGreaterThan()
+	comparables[parser.LT] = comparators.NewLessThan()
+	comparables[parser.GTEQ] = comparators.NewGreaterThanOrEqual()
+	comparables[parser.LTEQ] = comparators.NewLessThanOrEqual()
 }
 
 // String returns the string representation of this comparator.
@@ -84,7 +81,6 @@ func (this *Comparator) String() string {
 // It attempts to resolve both operands as property references; at least one must resolve.
 // Returns an error if neither operand can be resolved to a property.
 func CreateComparator(c *l8api.L8Comparator, rootTable *l8reflect.L8Node, resources ifs.IResources) (*Comparator, error) {
-	initComparables()
 	ormComp := &Comparator{}
 	ormComp.operation = parser.ComparatorOperation(c.Oper)
 	ormComp.left = c.Left

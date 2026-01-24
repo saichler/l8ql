@@ -42,19 +42,17 @@ const (
 // ones to ensure correct matching (e.g., ">=" before ">").
 var comparators = make([]ComparatorOperation, 0)
 
-// initComparators initializes the comparators slice with all supported operators
-// in the correct order for parsing. Called once on first use.
-func initComparators() {
-	if len(comparators) == 0 {
-		comparators = append(comparators, GTEQ)
-		comparators = append(comparators, LTEQ)
-		comparators = append(comparators, Neq)
-		comparators = append(comparators, Eq)
-		comparators = append(comparators, GT)
-		comparators = append(comparators, LT)
-		comparators = append(comparators, NOTIN)
-		comparators = append(comparators, IN)
-	}
+// init initializes the comparators slice with all supported operators
+// in the correct order for parsing.
+func init() {
+	comparators = append(comparators, GTEQ)
+	comparators = append(comparators, LTEQ)
+	comparators = append(comparators, Neq)
+	comparators = append(comparators, Eq)
+	comparators = append(comparators, GT)
+	comparators = append(comparators, LT)
+	comparators = append(comparators, NOTIN)
+	comparators = append(comparators, IN)
 }
 
 // StringComparator converts an L8Comparator into its string representation
