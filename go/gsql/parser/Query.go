@@ -35,7 +35,6 @@ package parser
 
 import (
 	"bytes"
-
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/types/l8api"
 
@@ -124,14 +123,14 @@ func TrimAndLowerNoKeys(sql string) string {
 func (this *PQuery) split() *parsed {
 	sql := TrimAndLowerNoKeys(this.pquery.Text)
 	data := &parsed{}
-	data.select_ = getSplitTag(sql, Select)
-	data.from_ = getTag(sql, From)
-	data.where_ = getTag(sql, Where)
+	data.select_ = getSplitTag(sql, this.pquery.Text, Select)
+	data.from_ = getTag(sql, this.pquery.Text, From)
+	data.where_ = getTag(sql, this.pquery.Text, Where)
 	data.descending_ = getBoolTag(sql, Descending)
 	data.ascending_ = getBoolTag(sql, Ascending)
-	data.limit_ = getTag(sql, Limit)
-	data.page_ = getTag(sql, Page)
-	data.sortby_ = getTag(sql, SortBy)
+	data.limit_ = getTag(sql, this.pquery.Text, Limit)
+	data.page_ = getTag(sql, this.pquery.Text, Page)
+	data.sortby_ = getTag(sql, this.pquery.Text, SortBy)
 	data.matchcase_ = getBoolTag(sql, MatchCase)
 	data.mapreduce_ = getBoolTag(sql, MapReduce)
 	return data
@@ -145,7 +144,7 @@ func getBoolTag(str, tag string) string {
 	return "false"
 }
 
-func getTag(str, tag string) string {
+func getTag(str, orig, tag string) string {
 	index := strings.Index(str, tag)
 	if index == -1 {
 		return ""
@@ -160,12 +159,12 @@ func getTag(str, tag string) string {
 			}
 		}
 	}
-	return strings.TrimSpace(str[index:index2])
+	return strings.TrimSpace(orig[index:index2])
 }
 
-func getSplitTag(str, tag string) []string {
+func getSplitTag(str, orig, tag string) []string {
 	result := make([]string, 0)
-	data := getTag(str, tag)
+	data := getTag(str, orig, tag)
 	if data == "" {
 		return result
 	}
@@ -215,10 +214,10 @@ func (this *PQuery) init() error {
 	if p.ascending_ == "true" {
 		this.pquery.Descending = false
 	}
-	if p.matchcase_ != "" {
+	if p.matchcase_ == "true" {
 		this.pquery.MatchCase = true
 	}
-	if p.mapreduce_ != "" {
+	if p.mapreduce_ == "true" {
 		this.pquery.MapReduce = true
 	}
 	return nil

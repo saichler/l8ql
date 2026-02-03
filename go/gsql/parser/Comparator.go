@@ -4,7 +4,7 @@
 Layer 8 Ecosystem is licensed under the Apache License, Version 2.0.
 You may obtain a copy of the License at:
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -27,14 +27,14 @@ type ComparatorOperation string
 
 // Comparison operators supported in L8QL WHERE clauses.
 const (
-	Eq    ComparatorOperation = "="         // Equal comparison
-	Neq   ComparatorOperation = "!="        // Not equal comparison
-	GT    ComparatorOperation = ">"         // Greater than comparison
-	LT    ComparatorOperation = "<"         // Less than comparison
-	GTEQ  ComparatorOperation = ">="        // Greater than or equal comparison
-	LTEQ  ComparatorOperation = "<="        // Less than or equal comparison
-	IN    ComparatorOperation = " in "      // Membership test (value in list)
-	NOTIN ComparatorOperation = " not in "  // Negative membership test (value not in list)
+	Eq    ComparatorOperation = "="        // Equal comparison
+	Neq   ComparatorOperation = "!="       // Not equal comparison
+	GT    ComparatorOperation = ">"        // Greater than comparison
+	LT    ComparatorOperation = "<"        // Less than comparison
+	GTEQ  ComparatorOperation = ">="       // Greater than or equal comparison
+	LTEQ  ComparatorOperation = "<="       // Less than or equal comparison
+	IN    ComparatorOperation = " in "     // Membership test (value in list)
+	NOTIN ComparatorOperation = " not in " // Negative membership test (value not in list)
 )
 
 // comparators holds the ordered list of comparison operators for parsing.
@@ -120,5 +120,5 @@ func stripQuotes(s string) string {
 	if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
 		return s[1 : len(s)-1]
 	}
-	return strings.ToLower(s)
+	return s
 }

@@ -4,7 +4,7 @@
 Layer 8 Ecosystem is licensed under the Apache License, Version 2.0.
 You may obtain a copy of the License at:
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -28,10 +28,10 @@ import (
 // against data objects. Expressions form a tree structure with conditions, child
 // expressions (for grouped/parenthesized expressions), and next expressions (for chained conditions).
 type Expression struct {
-	condition *Condition                 // The condition at this node (leaf expression)
-	operation parser.ConditionOperation  // AND/OR operator connecting to next expression
-	next      *Expression                // Next expression in the chain
-	child     *Expression                // Child expression (for parenthesized groups)
+	condition *Condition                // The condition at this node (leaf expression)
+	operation parser.ConditionOperation // AND/OR operator connecting to next expression
+	next      *Expression               // Next expression in the chain
+	child     *Expression               // Child expression (for parenthesized groups)
 }
 
 // String returns the string representation of this expression tree.
@@ -94,7 +94,7 @@ func CreateExpression(expr *l8api.L8Expression, rootTable *l8reflect.L8Node, res
 // Match evaluates this expression tree against the given object.
 // For AND operations, all parts must match. For OR operations, any match is sufficient.
 // The expression evaluates its condition, child expression, and next expression.
-func (this *Expression) Match(root interface{}) (bool, error) {
+func (this *Expression) Match(root interface{}, matchCase bool) (bool, error) {
 	cond := true
 	child := true
 	next := true
@@ -105,19 +105,19 @@ func (this *Expression) Match(root interface{}) (bool, error) {
 		next = false
 	}
 	if this.condition != nil {
-		cond, e = this.condition.Match(root)
+		cond, e = this.condition.Match(root, matchCase)
 		if e != nil {
 			return false, e
 		}
 	}
 	if this.child != nil {
-		child, e = this.child.Match(root)
+		child, e = this.child.Match(root, matchCase)
 		if e != nil {
 			return false, e
 		}
 	}
 	if this.next != nil {
-		next, e = this.next.Match(root)
+		next, e = this.next.Match(root, matchCase)
 		if e != nil {
 			return false, e
 		}

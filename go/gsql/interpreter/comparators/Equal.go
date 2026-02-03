@@ -95,8 +95,8 @@ func eqStringMatcher(left, right interface{}) bool {
 		}
 		return false
 	}
-	aside := removeSingleQuote(strings.ToLower(left.(string)))
-	zside := removeSingleQuote(strings.ToLower(right.(string)))
+	aside := removeSingleQuote(left.(string))
+	zside := removeSingleQuote(right.(string))
 	if aside == "nil" && zside == "" {
 		return true
 	}

@@ -4,7 +4,7 @@
 Layer 8 Ecosystem is licensed under the Apache License, Version 2.0.
 You may obtain a copy of the License at:
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -28,9 +28,9 @@ import (
 // It contains a comparator for the actual comparison and optionally a link to the next
 // condition in a chain connected by AND/OR operators.
 type Condition struct {
-	comparator *Comparator                // The comparison to evaluate
-	operation  parser.ConditionOperation  // AND/OR operator connecting to next condition
-	next       *Condition                 // Next condition in the chain (if any)
+	comparator *Comparator               // The comparison to evaluate
+	operation  parser.ConditionOperation // AND/OR operator connecting to next condition
+	next       *Condition                // Next condition in the chain (if any)
 }
 
 // CreateCondition creates an interpreted Condition from a parsed L8Condition.
@@ -75,8 +75,8 @@ func (this *Condition) toString(buff *bytes.Buffer) {
 
 // Match evaluates this condition chain against the given object.
 // For AND operations, all conditions must match. For OR operations, any match is sufficient.
-func (this *Condition) Match(root interface{}) (bool, error) {
-	comp, e := this.comparator.Match(root)
+func (this *Condition) Match(root interface{}, matchCase bool) (bool, error) {
+	comp, e := this.comparator.Match(root, matchCase)
 	if e != nil {
 		return false, e
 	}
@@ -85,7 +85,7 @@ func (this *Condition) Match(root interface{}) (bool, error) {
 		next = false
 	}
 	if this.next != nil {
-		next, e = this.next.Match(root)
+		next, e = this.next.Match(root, matchCase)
 		if e != nil {
 			return false, e
 		}

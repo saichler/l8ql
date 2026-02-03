@@ -4,7 +4,7 @@
 Layer 8 Ecosystem is licensed under the Apache License, Version 2.0.
 You may obtain a copy of the License at:
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,24 +17,25 @@ package interpreter
 import (
 	"bytes"
 	"errors"
-
 	"github.com/saichler/l8ql/go/gsql/interpreter/comparators"
 	"github.com/saichler/l8ql/go/gsql/parser"
 	"github.com/saichler/l8reflect/go/reflect/properties"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/types/l8api"
 	"github.com/saichler/l8types/go/types/l8reflect"
+	"reflect"
+	"strings"
 )
 
 // Comparator represents an interpreted comparison that can be evaluated against data objects.
 // It holds the left and right operands (either literal values or property references)
 // and the comparison operation to perform.
 type Comparator struct {
-	left          string               // Left operand as string (property name or literal)
-	leftProperty  *properties.Property // Resolved property for left operand (if applicable)
+	left          string                     // Left operand as string (property name or literal)
+	leftProperty  *properties.Property       // Resolved property for left operand (if applicable)
 	operation     parser.ComparatorOperation // The comparison operation (=, !=, >, <, etc.)
-	right         string               // Right operand as string (property name or literal)
-	rightProperty *properties.Property // Resolved property for right operand (if applicable)
+	right         string                     // Right operand as string (property name or literal)
+	rightProperty *properties.Property       // Resolved property for right operand (if applicable)
 }
 
 // Comparable is the interface implemented by comparison operators.
@@ -89,7 +90,6 @@ func CreateComparator(c *l8api.L8Comparator, rootTable *l8reflect.L8Node, resour
 	rightProp := propertyPath(ormComp.right, rootTable.TypeName)
 	ormComp.leftProperty, _ = properties.PropertyOf(leftProp, resources)
 	ormComp.rightProperty, _ = properties.PropertyOf(rightProp, resources)
-
 	if ormComp.leftProperty == nil && ormComp.rightProperty == nil {
 		return nil, errors.New("No Field was found for comparator: " + c.String())
 	}
@@ -98,7 +98,7 @@ func CreateComparator(c *l8api.L8Comparator, rootTable *l8reflect.L8Node, resour
 
 // Match evaluates this comparison against the given object.
 // It retrieves the property values and delegates to the appropriate Comparable implementation.
-func (this *Comparator) Match(root interface{}) (bool, error) {
+func (this *Comparator) Match(root interface{}, matchCase bool) (bool, error) {
 	var leftValue interface{}
 	var rightValue interface{}
 	var err error
@@ -115,6 +115,10 @@ func (this *Comparator) Match(root interface{}) (bool, error) {
 		return false, err
 	} else {
 		rightValue = this.right
+	}
+	if !matchCase {
+		leftValue = toLowerValue(leftValue)
+		rightValue = toLowerValue(rightValue)
 	}
 	matcher := comparables[this.operation]
 	if matcher == nil {
@@ -169,4 +173,65 @@ func (this *Comparator) ValueForParameter(name string) string {
 		return this.right
 	}
 	return ""
+}
+
+// toLowerValue converts string values to lowercase for case-insensitive comparison.
+// It handles plain strings, slices of strings, and maps with string values.
+func toLowerValue(value interface{}) interface{} {
+	if s, ok := value.(string); ok {
+		return strings.ToLower(s)
+	}
+
+	v := reflect.ValueOf(value)
+	if !v.IsValid() {
+		return value
+	}
+
+	switch v.Kind() {
+	case reflect.Slice:
+		if v.Len() == 0 {
+			return value
+		}
+		elem := v.Index(0)
+		elemKind := elem.Kind()
+		if elemKind == reflect.Interface {
+			elemKind = reflect.ValueOf(elem.Interface()).Kind()
+		}
+		if elemKind == reflect.String {
+			result := make([]interface{}, v.Len())
+			for i := 0; i < v.Len(); i++ {
+				e := v.Index(i)
+				if e.Kind() == reflect.Interface {
+					e = reflect.ValueOf(e.Interface())
+				}
+				result[i] = strings.ToLower(e.String())
+			}
+			return result
+		}
+	case reflect.Map:
+		mapType := v.Type()
+		elemKind := mapType.Elem().Kind()
+		if elemKind == reflect.Interface {
+			for _, key := range v.MapKeys() {
+				val := v.MapIndex(key)
+				if reflect.ValueOf(val.Interface()).Kind() == reflect.String {
+					elemKind = reflect.String
+					break
+				}
+			}
+		}
+		if elemKind == reflect.String {
+			result := reflect.MakeMap(mapType)
+			for _, key := range v.MapKeys() {
+				val := v.MapIndex(key)
+				if val.Kind() == reflect.Interface {
+					val = reflect.ValueOf(val.Interface())
+				}
+				result.SetMapIndex(key, reflect.ValueOf(strings.ToLower(val.String())))
+			}
+			return result.Interface()
+		}
+	}
+
+	return value
 }

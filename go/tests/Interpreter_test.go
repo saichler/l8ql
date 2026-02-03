@@ -4,7 +4,7 @@
 Layer 8 Ecosystem is licensed under the Apache License, Version 2.0.
 You may obtain a copy of the License at:
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -134,6 +134,26 @@ func TestDeepMatchMultiValueSlice(t *testing.T) {
 	pb.MySubs["newone"] = &testtypes.TestProtoSubSub{MyString: "Subnode6-0-index-0"}
 	node.MyModelSlice = append(node.MyModelSlice, pb)
 	if !checkMatch("Select myString fRom testproto wHere MyModelSlice.mysubs.myString=Subnode6-0-index-0", node, true, t) {
+		return
+	}
+}
+
+func TestMatchCaseInsensitive(t *testing.T) {
+	node := CreateTestModelInstance(1)
+	node.MyString = "aicler"
+
+	// Without match-case, "aicler" should match criteria MyString=Aicler (case-insensitive)
+	if !checkMatch("select * from testproto where MyString=Aicler", node, true, t) {
+		return
+	}
+}
+
+func TestMatchCaseSensitive(t *testing.T) {
+	node := CreateTestModelInstance(1)
+	node.MyString = "aicler"
+
+	// With match-case, "aicler" should NOT match criteria MyString=Aicler (case-sensitive)
+	if !checkMatch("select * from testproto where MyString=Aicler match-case", node, false, t) {
 		return
 	}
 }

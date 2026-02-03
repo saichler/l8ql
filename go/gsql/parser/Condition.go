@@ -79,14 +79,15 @@ func toString(this *l8api.L8Condition, buff *bytes.Buffer) {
 // Comparisons are parsed left-to-right and linked together in a chain.
 // Returns an error if the condition string contains invalid syntax.
 func NewCondition(ws string) (*l8api.L8Condition, error) {
+	wsLower := strings.ToLower(ws)
 	loc := MAX_EXPRESSION_SIZE
 	var op ConditionOperation
-	and := strings.Index(ws, string(And))
+	and := strings.Index(wsLower, string(And))
 	if and != -1 {
 		loc = and
 		op = And
 	}
-	or := strings.Index(ws, string(Or))
+	or := strings.Index(wsLower, string(Or))
 	if or != -1 && or < loc {
 		loc = or
 		op = Or
@@ -124,16 +125,17 @@ func NewCondition(ws string) (*l8api.L8Condition, error) {
 // Returns the operator type, its position, and nil error if found.
 // Returns an error if no operator is found.
 func getLastConditionOp(ws string) (ConditionOperation, int, error) {
+	wsLower := strings.ToLower(ws)
 	loc := -1
 	var op ConditionOperation
 
-	and := strings.LastIndex(ws, string(And))
+	and := strings.LastIndex(wsLower, string(And))
 	if and > loc {
 		op = And
 		loc = and
 	}
 
-	or := strings.LastIndex(ws, string(Or))
+	or := strings.LastIndex(wsLower, string(Or))
 	if or > loc {
 		op = Or
 		loc = or
@@ -149,14 +151,15 @@ func getLastConditionOp(ws string) (ConditionOperation, int, error) {
 // Returns the operator type, its position, and nil error if found.
 // Returns an error if no operator is found.
 func getFirstConditionOp(ws string) (ConditionOperation, int, error) {
+	wsLower := strings.ToLower(ws)
 	loc := MAX_EXPRESSION_SIZE
 	var op ConditionOperation
-	and := strings.Index(ws, string(And))
+	and := strings.Index(wsLower, string(And))
 	if and != -1 {
 		loc = and
 		op = And
 	}
-	or := strings.Index(ws, string(Or))
+	or := strings.Index(wsLower, string(Or))
 	if or != -1 && or < loc {
 		loc = or
 		op = Or

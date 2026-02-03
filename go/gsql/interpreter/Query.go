@@ -220,6 +220,7 @@ func (this *Query) initColumns(query *l8api.L8Query, resources ifs.IResources) e
 // the root table name if not already present.
 func propertyPath(colName, rootTable string) string {
 	rootTable = strings.ToLower(rootTable)
+	colName = strings.ToLower(colName)
 	rootTablePrefix := bytes.Buffer{}
 	rootTablePrefix.WriteString(rootTable)
 	rootTablePrefix.WriteString(".")
@@ -242,7 +243,7 @@ func (this *Query) match(root interface{}) (bool, error) {
 	if this.where == nil {
 		return true, nil
 	}
-	return this.where.Match(root)
+	return this.where.Match(root, this.matchCase)
 }
 
 // Filter applies the query's WHERE clause to a list of objects and returns
