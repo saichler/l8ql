@@ -56,6 +56,7 @@ func NewEqual() *Equal {
 	c.compares[reflect.Uint32] = eqUintMatcher
 	c.compares[reflect.Uint64] = eqUintMatcher
 	c.compares[reflect.Ptr] = eqPtrMatcher
+	c.compares[reflect.Bool] = eqBoolMatcher
 	return c
 }
 
@@ -244,4 +245,38 @@ func GetWildCardSubstrings(str string) []string {
 		return nil
 	}
 	return strings.Split(str, "*")
+}
+
+func eqBoolMatcher(left, right interface{}) bool {
+	aside, aok := getBool(left)
+	zside, zok := getBool(right)
+
+	rightValue, ok := right.(string)
+	if ok && rightValue == "nil" && aok && aside == zside {
+		return true
+	}
+
+	leftValue, ok := left.(string)
+	if ok && leftValue == "nil" && zok && zside == aside {
+		return true
+	}
+
+	if !aok || !zok {
+		return false
+	}
+
+	return aside == zside
+}
+
+func getBool(v interface{}) (bool, bool) {
+	value := reflect.ValueOf(v)
+	if value.Kind() != reflect.String {
+		return value.Bool(), true
+	} else {
+		i, e := strconv.ParseBool(value.String())
+		if e != nil {
+			return false, false
+		}
+		return i, true
+	}
 }
