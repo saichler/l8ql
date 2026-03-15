@@ -62,6 +62,8 @@ type parsed struct {
 	page_       string
 	matchcase_  string
 	mapreduce_  string
+	groupby_    string
+	having_     string
 }
 
 // Query clause keywords used for parsing L8QL query strings.
@@ -76,10 +78,12 @@ const (
 	Page       = "page"       // PAGE clause keyword for pagination
 	MatchCase  = "match-case" // MATCH-CASE keyword for case-sensitive matching
 	MapReduce  = "mapreduce"  // MAPREDUCE keyword for enabling map-reduce mode
+	GroupBy    = "group-by"   // GROUP-BY clause keyword for aggregation grouping
+	Having     = "having"     // HAVING clause keyword for filtering aggregate results
 )
 
 // words contains all query keywords used for parsing clause boundaries.
-var words = []string{Select, From, Where, SortBy, Descending, Ascending, Limit, Page, MatchCase, MapReduce}
+var words = []string{Select, From, Where, SortBy, Descending, Ascending, Limit, Page, MatchCase, MapReduce, GroupBy, Having}
 
 // Query returns a pointer to the underlying L8Query protobuf message
 // that was parsed from the query string.
@@ -133,6 +137,8 @@ func (this *PQuery) split() *parsed {
 	data.sortby_ = getTag(sql, this.pquery.Text, SortBy)
 	data.matchcase_ = getBoolTag(sql, MatchCase)
 	data.mapreduce_ = getBoolTag(sql, MapReduce)
+	data.groupby_ = getTag(sql, this.pquery.Text, GroupBy)
+	data.having_ = getTag(sql, this.pquery.Text, Having)
 	return data
 }
 
@@ -220,5 +226,42 @@ func (this *PQuery) init() error {
 	if p.mapreduce_ == "true" {
 		this.pquery.MapReduce = true
 	}
+
+	// Parse GROUP BY clause
+	if p.groupby_ != "" {
+		groupByCols := strings.Split(p.groupby_, ",")
+		this.pquery.GroupBy = make([]string, 0, len(groupByCols))
+		for _, col := range groupByCols {
+			col = strings.TrimSpace(col)
+			if col != "" {
+				this.pquery.GroupBy = append(this.pquery.GroupBy, col)
+			}
+		}
+	}
+
+	// Detect and extract aggregate functions from SELECT properties
+	if isAggregateQuery(this.pquery.Properties) {
+		remaining := make([]string, 0)
+		this.pquery.Aggregates = make([]*l8api.L8AggregateFunction, 0)
+		for _, prop := range this.pquery.Properties {
+			aggFn, ok := parseAggregateFunction(prop)
+			if ok {
+				this.pquery.Aggregates = append(this.pquery.Aggregates, aggFn)
+			} else {
+				remaining = append(remaining, prop)
+			}
+		}
+		this.pquery.Properties = remaining
+	}
+
+	// Parse HAVING clause
+	if p.having_ != "" {
+		having, e := parseExpression(p.having_)
+		if e != nil {
+			return e
+		}
+		this.pquery.Having = having
+	}
+
 	return nil
 }

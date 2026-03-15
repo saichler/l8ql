@@ -27,6 +27,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 
@@ -53,6 +54,12 @@ type Query struct {
 	matchCase      bool                     // Case-sensitive matching if true
 	resources      ifs.IResources           // Resources for logging and introspection
 	query          *l8api.L8Query           // The original parsed query
+	groupBy        []string                 // Group-by field names
+	groupByProps   []*properties.Property   // Resolved group-by properties
+	aggregates     []*l8api.L8AggregateFunction // Parsed aggregate functions
+	aggregateProps map[string]*properties.Property // Field -> property for aggregated fields
+	having         *Expression              // HAVING clause expression
+	isAggregate    bool                     // True if query has aggregate functions
 }
 
 // NewFromQuery creates a new interpreted Query from a parsed L8Query protobuf message.
@@ -97,6 +104,44 @@ func NewFromQuery(query *l8api.L8Query, resources ifs.IResources) (*Query, error
 			return nil, errors.New(er.Error())
 		}
 		iQuery.sortByProperty = sortByProperty
+	}
+
+	// Initialize aggregate fields
+	if len(query.Aggregates) > 0 {
+		iQuery.isAggregate = true
+		iQuery.aggregates = query.Aggregates
+		iQuery.aggregateProps = make(map[string]*properties.Property)
+		for _, agg := range query.Aggregates {
+			if agg.Field != "*" {
+				prop, er := properties.PropertyOf(rootTable.TypeName+"."+agg.Field, resources)
+				if er != nil {
+					return nil, errors.New(er.Error())
+				}
+				iQuery.aggregateProps[agg.Field] = prop
+			}
+		}
+	}
+
+	// Initialize group-by fields
+	if len(query.GroupBy) > 0 {
+		iQuery.groupBy = query.GroupBy
+		iQuery.groupByProps = make([]*properties.Property, 0, len(query.GroupBy))
+		for _, gb := range query.GroupBy {
+			prop, er := properties.PropertyOf(rootTable.TypeName+"."+gb, resources)
+			if er != nil {
+				return nil, errors.New(er.Error())
+			}
+			iQuery.groupByProps = append(iQuery.groupByProps, prop)
+		}
+	}
+
+	// Initialize HAVING clause
+	if query.Having != nil {
+		havingExpr, er := CreateExpression(query.Having, rootTable, resources)
+		if er != nil {
+			return nil, er
+		}
+		iQuery.having = havingExpr
 	}
 
 	return iQuery, nil
@@ -339,4 +384,93 @@ func (this *Query) ValueForParameter(name string) string {
 		return ""
 	}
 	return this.where.ValueForParameter(name)
+}
+
+// IsAggregate returns true if this query contains aggregate functions.
+func (this *Query) IsAggregate() bool {
+	return this.isAggregate
+}
+
+// Aggregate groups the filtered list by group-by fields and computes
+// aggregate functions for each group. Returns an array of result maps.
+// Each map contains the group-by field values and computed aggregate values.
+func (this *Query) Aggregate(list []interface{}) []map[string]interface{} {
+	// Group objects by group-by key
+	groups := make(map[string][]interface{})
+	groupOrder := make([]string, 0)
+	groupKeys := make(map[string]map[string]interface{})
+
+	for _, item := range list {
+		key, keyValues := this.buildGroupKey(item)
+		if _, exists := groups[key]; !exists {
+			groups[key] = make([]interface{}, 0)
+			groupOrder = append(groupOrder, key)
+			groupKeys[key] = keyValues
+		}
+		groups[key] = append(groups[key], item)
+	}
+
+	// Compute aggregates for each group
+	results := make([]map[string]interface{}, 0, len(groupOrder))
+	for _, key := range groupOrder {
+		groupItems := groups[key]
+		result := make(map[string]interface{})
+
+		// Copy group-by values
+		for k, v := range groupKeys[key] {
+			result[k] = v
+		}
+
+		// Compute each aggregate function
+		for _, agg := range this.aggregates {
+			acc := NewAccumulator(agg.Function)
+			for _, item := range groupItems {
+				if agg.Field == "*" {
+					acc.Add(nil)
+				} else {
+					prop := this.aggregateProps[agg.Field]
+					if prop != nil {
+						val, _ := prop.Get(item)
+						acc.Add(val)
+					}
+				}
+			}
+			result[agg.Alias] = acc.Result()
+		}
+
+		results = append(results, result)
+	}
+
+	return results
+}
+
+// buildGroupKey creates a string key from the group-by field values of an object.
+// Also returns a map of field name -> value for constructing the result.
+func (this *Query) buildGroupKey(item interface{}) (string, map[string]interface{}) {
+	keyValues := make(map[string]interface{})
+	if len(this.groupByProps) == 0 {
+		// No group-by — all items in one group
+		return "__all__", keyValues
+	}
+
+	buff := bytes.Buffer{}
+	for i, prop := range this.groupByProps {
+		val, _ := prop.Get(item)
+		if i > 0 {
+			buff.WriteString("|")
+		}
+		key := this.groupBy[i]
+		keyValues[key] = val
+		if val != nil {
+			buff.WriteString(strings.Replace(fmt.Sprintf("%v", val), "|", "\\|", -1))
+		} else {
+			buff.WriteString("<nil>")
+		}
+	}
+	return buff.String(), keyValues
+}
+
+// SortByProperty returns the resolved sort-by property, or nil.
+func (this *Query) SortByProperty() *properties.Property {
+	return this.sortByProperty
 }
