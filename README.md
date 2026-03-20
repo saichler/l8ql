@@ -1,9 +1,9 @@
-# L8QL - Layer 8 API Query Language
+# L8QL - Layer 8 Query Language
 
-[![Go Version](https://img.shields.io/badge/go-1.23.8-blue.svg)](https://golang.org/)
+[![Go Version](https://img.shields.io/badge/go-1.25.4-blue.svg)](https://golang.org/)
 [![License](https://img.shields.io/badge/license-GPL%20v3-blue.svg)](LICENSE)
 
-L8QL (Layer 8 API Query Language) is an alteration and facade of the SQL language designed for querying Graph Models at runtime. It provides a single, simple, and common API to query graph model data of any Go struct, eliminating the need for complex API integrations.
+L8QL is a lightweight, pure-Go, reflection-based SQL-like query language for filtering Go data structures in memory. No database, no ORM - just struct filtering via reflection. It provides a single, simple, and common API to query graph model data of any Go struct at runtime.
 
 ## Table of Contents
 
@@ -12,10 +12,12 @@ L8QL (Layer 8 API Query Language) is an alteration and facade of the SQL languag
 - [Architecture](#architecture)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
-- [Usage Examples](#usage-examples)
 - [Query Syntax](#query-syntax)
+- [Usage Examples](#usage-examples)
 - [API Reference](#api-reference)
 - [Testing](#testing)
+- [Project Structure](#project-structure)
+- [Dependencies](#dependencies)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -31,39 +33,44 @@ If we do an analogy to Language, the infrastructure components are the alphabet,
 
 ## Features
 
-- **SQL-like Query Language**: Familiar syntax for developers
-- **Graph Model Support**: Native support for complex nested structures
-- **Runtime Introspection**: Automatic model discovery and schema generation
-- **Filter and Match**: Powerful filtering capabilities with pattern matching
-- **Sorting and Pagination**: Built-in support for `sort-by`, `limit`, `page`, `ascending`/`descending`
-- **Case Sensitivity Control**: Optional `match-case` functionality
-- **Deep Path Navigation**: Query nested objects and collections seamlessly
-- **Hash Support**: Built-in MD5 hash generation for data integrity and caching
-- **Advanced Sorting**: Sort by value with support for complex data types
-- **Type Safety**: Strong typing with Go's reflection system
-- **Zero Dependencies**: Lightweight design with minimal external dependencies
+- **SQL-like Query Language** - Familiar syntax for developers
+- **Two-Stage Compilation** - Parser (string to protobuf) then Interpreter (protobuf to executable query)
+- **Graph Model Support** - Native support for complex nested structures
+- **Runtime Introspection** - Automatic model discovery and schema generation
+- **Filter and Match** - Powerful filtering with wildcard pattern matching (`J*` matches `John`, `Jane`)
+- **Aggregation** - `count(*)`, `sum()`, `avg()`, `min()`, `max()` with `group-by` and `having`
+- **Sorting and Pagination** - `sort-by`, `limit`, `page`, `ascending`/`descending`
+- **Case Sensitivity Control** - Optional `match-case` for case-sensitive string matching
+- **Deep Path Navigation** - Query nested objects, arrays, and maps seamlessly
+- **MapReduce Mode** - Built-in `mapreduce` flag for distributed query execution
+- **Hash Support** - MD5 hash generation for query caching and deduplication
+- **Type-Safe Comparators** - Dedicated comparators for strings, integers, unsigned integers, booleans, and pointers
+- **Zero External Runtime Dependencies** - Pure Go with reflection
 
 ## Architecture
 
-L8QL consists of several key components:
+L8QL uses a two-stage compilation model:
 
-### 1. Introspector
-The Model Introspector accepts a Go struct and introspects it by drilling down to discover its attributes and sub-objects. From this data, it creates:
-- **Internal Schema**: Mapping struct→table and attribute→column
-- **Graph Schema**: Mapping relations between the root struct and its sub-structs
+```
+Query String --> [Parser] --> L8Query Protobuf --> [Interpreter] --> Executable Query
+                 (syntax)                          (semantic)
+```
 
-### 2. Parser
-The parser parses the query string and validates syntax correctness. It divides the query into:
-- **Requested Columns**: Selected fields
-- **Tables**: Target struct types
-- **Criteria**: Divided into Expressions, Comparators & Conditions
+### 1. Parser
+The parser (`go/gsql/parser/`) takes a query string and produces an `L8Query` protobuf message. It validates syntax only - no type checking. The query is divided into:
+- **Selected Columns** - Fields to return (including aggregate functions)
+- **Table** - Target struct type
+- **Where Clause** - Expression tree of conditions and comparators
+- **Modifiers** - Sort-by, limit, page, match-case, mapreduce, group-by, having
 
-### 3. Interpreter
-The Interpreter takes a syntax-valid parsed query and validates it via the Introspector schema. It matches string representations of attributes to discovered Columns & tables. The outcome is an Interpreter Query instance for filtering elements.
+### 2. Interpreter
+The interpreter (`go/gsql/interpreter/`) takes the parsed protobuf and an `IResources` instance (which provides the introspector) and produces an executable `Query`. It validates the query against the introspected type schema, resolving string field names to actual property accessors.
 
-### 4. Instance & Attribute System
-- **Instance**: String representation of an instance inside the model (e.g., `"Employee[key]"`)
-- **Attribute**: String representation of a struct attribute (e.g., `"Employee[key].Addresses.Address[0].Line2"`)
+### 3. Comparators
+Type-aware comparison operators (`go/gsql/interpreter/comparators/`) handle the specifics of comparing different Go types: strings (with wildcard support), integers, unsigned integers, booleans, and pointers/nil.
+
+### 4. Accumulator
+The accumulator (`go/gsql/interpreter/Accumulator.go`) tracks aggregate computation state for `count`, `sum`, `avg`, `min`, and `max` operations across grouped results.
 
 ## Installation
 
@@ -79,172 +86,239 @@ package main
 import (
     "fmt"
     "github.com/saichler/l8ql/go/gsql/interpreter"
-    "github.com/saichler/l8types/go/ifs"
 )
 
-// Define your model
 type Employee struct {
-    Name      string
-    Age       int32
-    Addresses []Address
+    Name       string
+    Age        int32
+    Department string
+    Salary     float64
+    Addresses  []Address
 }
 
 type Address struct {
     Line1   string
-    Line2   string
-    Zip     string
+    City    string
     Country string
 }
 
 func main() {
-    // Create a query
+    // Create and execute a query
     query, err := interpreter.NewQuery(
-        "select name, age from employee where name='John' or age>25", 
+        "select name, age from Employee where name='John' or age>25",
         resources, // your IResources implementation
     )
     if err != nil {
         panic(err)
     }
-    
-    // Test with your data
-    employees := []*Employee{
-        {Name: "John", Age: 30},
-        {Name: "Jane", Age: 25},
-        {Name: "Bob", Age: 35},
+
+    employees := []interface{}{
+        &Employee{Name: "John", Age: 30, Department: "Engineering"},
+        &Employee{Name: "Jane", Age: 25, Department: "Sales"},
+        &Employee{Name: "Bob", Age: 35, Department: "Engineering"},
     }
-    
+
     // Filter matching elements
+    results := query.Filter(employees, false)
+    for _, r := range results {
+        fmt.Printf("Matched: %+v\n", r)
+    }
+
+    // Or test individual objects
     for _, emp := range employees {
         if query.Match(emp) {
-            fmt.Printf("Matched: %+v\n", emp)
+            fmt.Printf("Match: %+v\n", emp)
         }
     }
 }
 ```
 
-## Usage Examples
-
-### Basic Queries
-
-```sql
--- Select all fields
-select * from employee
-
--- Select specific fields
-select name, age from employee where age > 25
-
--- Complex conditions with parentheses
-select name from employee where (age > 25 and name = 'John') or country = 'USA'
-```
-
-### Deep Path Navigation
-
-```sql
--- Query nested objects
-select name from employee where addresses.country = 'USA'
-
--- Query array elements
-select name from employee where addresses[0].zip = '12345'
-
--- Query map values
-select name from employee where metadata.department = 'Engineering'
-```
-
-### Advanced Features
-
-```sql
--- Sorting and pagination
-select * from employee where age > 25 sort-by age descending limit 10 page 1
-
--- Case-sensitive matching
-select * from employee where name = 'john' match-case
-
--- Pattern matching
-select * from employee where name = 'J*'
-```
-
 ## Query Syntax
-
-L8QL supports the following SQL-like syntax:
 
 ### Basic Structure
 ```sql
-select <columns> from <table> [where <conditions>] [sort-by <column>] [ascending|descending] [limit <number>] [page <number>] [match-case]
+select <columns> from <type>
+    [where <conditions>]
+    [sort-by <column>] [ascending|descending]
+    [limit <number>] [page <number>]
+    [match-case]
+    [mapreduce]
+    [group-by <columns>] [having <conditions>]
 ```
 
-### Supported Comparators
-- `=` - Equal
-- `!=` - Not Equal  
-- `<` - Less Than
-- `<=` - Less Than or Equal
-- `>` - Greater Than
-- `>=` - Greater Than or Equal
-- `in` - In (for arrays/collections)
-- `not-in` - Not In
+### Comparison Operators
+| Operator | Description |
+|----------|-------------|
+| `=` | Equal (supports wildcards: `name='J*'`) |
+| `!=` | Not Equal |
+| `>` | Greater Than |
+| `>=` | Greater Than or Equal |
+| `<` | Less Than |
+| `<=` | Less Than or Equal |
+| `in` | Value in list |
+| `not in` | Value not in list |
 
 ### Logical Operators
-- `and` - Logical AND
-- `or` - Logical OR
-- `()` - Parentheses for grouping
+| Operator | Description |
+|----------|-------------|
+| `and` | Logical AND |
+| `or` | Logical OR |
+| `()` | Parentheses for grouping |
 
-### Special Features
-- `*` - Wildcard for selecting all columns
-- `sort-by <column>` - Sort results by specified column
-- `ascending`/`descending` - Sort order
-- `limit <n>` - Limit results to n items (max 1000)
-- `page <n>` - Page number for pagination
-- `match-case` - Enable case-sensitive string matching
+### Aggregate Functions
+| Function | Description |
+|----------|-------------|
+| `count(*)` | Count all rows |
+| `count(field)` | Count non-null values |
+| `sum(field)` | Sum numeric values |
+| `avg(field)` | Average numeric values |
+| `min(field)` | Minimum value |
+| `max(field)` | Maximum value |
+
+### Modifiers
+| Modifier | Description |
+|----------|-------------|
+| `sort-by <col>` | Sort results by column |
+| `ascending` / `descending` | Sort direction (default: ascending) |
+| `limit <n>` | Limit results (max 1000) |
+| `page <n>` | Page number for pagination |
+| `match-case` | Enable case-sensitive string matching |
+| `mapreduce` | Enable map-reduce mode for distributed execution |
+| `group-by <cols>` | Group results for aggregation |
+| `having <conds>` | Filter groups after aggregation |
+
+## Usage Examples
+
+### Basic Queries
+```sql
+-- Select all fields
+select * from Employee
+
+-- Select specific fields with conditions
+select name, age from Employee where age > 25
+
+-- Complex conditions with parentheses
+select name from Employee where (age > 25 and department = 'Engineering') or country = 'USA'
+```
+
+### Deep Path Navigation
+```sql
+-- Query nested objects
+select name from Employee where addresses.country = 'USA'
+
+-- Query by map values
+select name from Employee where metadata.department = 'Engineering'
+```
+
+### Pattern Matching
+```sql
+-- Wildcard matching
+select * from Employee where name = 'J*'
+
+-- Case-sensitive matching
+select * from Employee where name = 'John' match-case
+```
+
+### Sorting and Pagination
+```sql
+-- Sort descending with pagination
+select * from Employee where age > 25 sort-by age descending limit 10 page 1
+```
+
+### Membership Tests
+```sql
+-- In / Not In
+select * from Employee where status in ('active', 'pending')
+select * from Employee where department not in ('HR', 'Legal')
+```
+
+### Aggregation
+```sql
+-- Count all employees
+select count(*) from Employee
+
+-- Group by with multiple aggregates
+select department, count(*), avg(salary), max(salary) from Employee group-by department
+
+-- Group by with having clause
+select department, count(*) from Employee group-by department having count(*) > 5
+```
 
 ## API Reference
 
-### Core Interfaces
+### Creating Queries
 
-#### Query Interface
 ```go
-type Query interface {
-    Match(any interface{}) bool
-    Filter(list []interface{}, onlySelectedColumns bool) []interface{}
-    String() string
-    // ... other methods
-}
-```
-
-#### Creating Queries
-```go
-// From SQL string
+// Parse and interpret in one step
 query, err := interpreter.NewQuery(sqlString, resources)
 
-// From parsed query object
-query, err := interpreter.NewFromQuery(parsedQuery, resources)
+// Parse only (syntax validation)
+parsed, err := parser.NewQuery(sqlString, logger)
+
+// Interpret a pre-parsed query
+query, err := interpreter.NewFromQuery(parsedQuery.Query(), resources)
 ```
 
-### Key Methods
+### Query Methods
 
-- `Match(any interface{}) bool` - Test if an object matches the query criteria
-- `Filter([]interface{}, bool) []interface{}` - Filter a slice of objects
-- `Properties() []ifs.IProperty` - Get selected properties
-- `Criteria() ifs.IExpression` - Get the where clause expression
+```go
+// Filtering
+query.Match(obj interface{}) bool                                    // Test single object
+query.Filter(list []interface{}, onlySelectedColumns bool) []interface{} // Filter list
+
+// Aggregation
+query.IsAggregate() bool                                             // Check if aggregate query
+query.Aggregate(list []interface{}) []map[string]interface{}         // Execute aggregation
+
+// Properties
+query.Properties() []ifs.IProperty          // Selected columns as properties
+query.PropertiesMap() map[string]ifs.IProperty
+query.RootType() *l8reflect.L8Node          // Resolved root type
+query.Criteria() ifs.IExpression            // WHERE clause expression tree
+
+// Sorting
+query.SortBy() string                       // Sort-by column name
+query.SortByValue(v interface{}) interface{} // Extract sort key from object
+query.SortByProperty() *properties.Property
+query.Descending() bool
+
+// Pagination
+query.Limit() int32
+query.Page() int32
+
+// Flags
+query.MatchCase() bool
+query.MapReduce() bool
+
+// Utility
+query.Hash() string                         // MD5 hash for caching
+query.String() string                       // Reconstructed query string
+query.Text() string                         // Original query text
+query.ValueForParameter(name string) string // Extract value from WHERE clause
+query.KeyOf() string                        // Extract key value
+```
 
 ## Testing
 
-The project includes comprehensive test suites:
-
 ### Running Tests
 ```bash
+cd go
+
 # Run all tests
-go test ./...
+go test ./... -v
 
-# Run with coverage
-go test -v -coverpkg=./gsql/... -coverprofile=cover.html ./...
+# Run with coverage report
+go test -v -coverpkg=./gsql/... -coverprofile=cover.html ./... --failfast
 
-# Run the test script (includes security checks)
+# Full test suite (fetches deps, runs tests, opens coverage)
 ./test.sh
 ```
 
 ### Test Categories
-- **Parser Tests**: Validate SQL parsing and syntax validation
-- **Interpreter Tests**: Test query execution and matching
-- **Integration Tests**: End-to-end query scenarios
+- **Parser Tests** (`Parser_test.go`) - Query parsing and syntax validation
+- **Interpreter Tests** (`Interpreter_test.go`) - Query execution, matching, and filtering
+- **Aggregate Tests** (`Aggregate_test.go`) - Aggregate functions, group-by, having
+- **Special Case Tests** (`TestSpecialCase_test.go`) - Edge cases and boundary conditions
 
 ## Project Structure
 
@@ -252,46 +326,59 @@ go test -v -coverpkg=./gsql/... -coverprofile=cover.html ./...
 l8ql/
 ├── go/
 │   ├── gsql/
-│   │   ├── interpreter/          # Query interpretation and execution
-│   │   │   ├── Query.go
-│   │   │   ├── Expression.go
-│   │   │   ├── Condition.go
-│   │   │   ├── Comparator.go
-│   │   │   └── comparators/      # Comparison operators
-│   │   └── parser/               # SQL parsing
-│   │       ├── Query.go
-│   │       ├── Expression.go
-│   │       ├── Condition.go
-│   │       └── Comparator.go
-│   ├── tests/                    # Test suites
-│   ├── test.sh                   # Test runner script
-│   ├── go.mod                    # Go module definition
-│   └── go.sum                    # Dependency checksums
-├── LICENSE                       # GPL v3 License
-└── README.md                     # This file
+│   │   ├── parser/                 # Stage 1: Query string -> L8Query protobuf
+│   │   │   ├── Query.go           # Main parser entry point
+│   │   │   ├── Aggregate.go       # Aggregate function parsing (count, sum, avg, min, max)
+│   │   │   ├── Expression.go      # WHERE clause expression parsing
+│   │   │   ├── Condition.go       # AND/OR condition chain parsing
+│   │   │   └── Comparator.go      # Comparison operator parsing
+│   │   │
+│   │   └── interpreter/            # Stage 2: L8Query protobuf -> executable query
+│   │       ├── Query.go           # Main interpreter, Match/Filter/Aggregate
+│   │       ├── Expression.go      # Interpreted expression tree
+│   │       ├── Condition.go       # Interpreted condition chain
+│   │       ├── Comparator.go      # Interpreted comparison with property resolution
+│   │       ├── Accumulator.go     # Aggregate state tracking (count/sum/avg/min/max)
+│   │       └── comparators/       # Type-aware comparison operators
+│   │           ├── Equal.go       # Equality with wildcard and bool support
+│   │           ├── NotEqual.go
+│   │           ├── GreaterThan.go
+│   │           ├── GreaterThanOrEqual.go
+│   │           ├── LessThan.go
+│   │           ├── LessThanOrEqual.go
+│   │           ├── In.go          # Membership test
+│   │           └── NotIn.go       # Negative membership test
+│   │
+│   ├── tests/                      # All tests
+│   │   ├── TestInit.go            # Test infrastructure setup
+│   │   ├── Parser_test.go
+│   │   ├── Interpreter_test.go
+│   │   ├── Aggregate_test.go
+│   │   └── TestSpecialCase_test.go
+│   │
+│   ├── test.sh                     # Test runner with coverage
+│   ├── go.mod
+│   └── vendor/                     # Vendored dependencies
+│
+├── LICENSE                         # GPL v3
+└── README.md
 ```
 
 ## Dependencies
 
-- **github.com/saichler/l8types** - Core type definitions and interfaces
-- **github.com/saichler/reflect** - Enhanced reflection utilities
-- **github.com/saichler/l8test** - Testing infrastructure
-- **Standard Go libraries** - No external runtime dependencies
+### Direct
+| Dependency | Purpose |
+|-----------|---------|
+| [l8types](https://github.com/saichler/l8types) | Core interfaces (`IQuery`, `IExpression`, `IResources`) and L8Query protobuf definition |
+| [l8reflect](https://github.com/saichler/l8reflect) | Reflection utilities, introspection, and property access |
+| [l8test](https://github.com/saichler/l8test) | Test infrastructure and test models |
+| [l8pollaris](https://github.com/saichler/l8pollaris) | Plugin loading support |
 
-## Performance Considerations
-
-- L8QL uses Go's reflection system for type introspection
-- Query parsing is done once and can be reused
-- Filtering is performed in-memory
-- Suitable for moderate-sized datasets (thousands to tens of thousands of objects)
-- For large datasets, consider implementing custom optimizations
-
-## Limitations
-
-- **In-Memory Processing**: All filtering happens in memory
-- **Limit Cap**: Maximum limit is 1000 items per query
-- **Go Structs Only**: Currently supports Go structs only
-- **No Joins**: No support for SQL-style joins between different types
+### Indirect
+| Dependency | Purpose |
+|-----------|---------|
+| google.golang.org/protobuf | Protobuf runtime |
+| l8bus, l8services, l8srlz, l8utils | Transitive via l8test |
 
 ## Contributing
 
@@ -299,18 +386,9 @@ l8ql/
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Make your changes
 4. Add tests for new functionality
-5. Run the test suite (`./test.sh`)
-6. Commit your changes (`git commit -m 'Add amazing feature'`)
-7. Push to the branch (`git push origin feature/amazing-feature`)
-8. Open a Pull Request
-
-### Development Guidelines
-
-- Follow Go coding conventions
-- Add comprehensive tests for new features
-- Update documentation for API changes
-- Ensure all tests pass before submitting
-- Use meaningful commit messages
+5. Run the test suite (`cd go && go test ./... -v`)
+6. Commit your changes
+7. Push and open a Pull Request
 
 ## License
 
@@ -318,21 +396,7 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 
 ## Support
 
-For questions, issues, or contributions:
-
 - **Issues**: [GitHub Issues](https://github.com/saichler/l8ql/issues)
-- **Discussions**: Use GitHub Discussions for questions and ideas
-- **Documentation**: Check the code documentation and tests for detailed examples
-
-## Roadmap
-
-- [ ] Performance optimizations for large datasets
-- [ ] Support for additional data types
-- [ ] Query optimization and caching
-- [ ] Integration with popular Go ORMs
-- [ ] Support for other programming languages
-- [ ] Advanced aggregation functions
-- [ ] Query plan visualization tools
 
 ---
 
