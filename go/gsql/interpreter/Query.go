@@ -474,3 +474,18 @@ func (this *Query) buildGroupKey(item interface{}) (string, map[string]interface
 func (this *Query) SortByProperty() *properties.Property {
 	return this.sortByProperty
 }
+
+// Aggregates returns the parsed aggregate functions from the SELECT clause.
+func (this *Query) Aggregates() []*l8api.L8AggregateFunction {
+	return this.aggregates
+}
+
+// GroupBy returns the list of fields to group results by.
+func (this *Query) GroupBy() []string {
+	return this.groupBy
+}
+
+// Having returns the HAVING clause expression for filtering aggregated results.
+func (this *Query) Having() ifs.IExpression {
+	return this.having
+}
