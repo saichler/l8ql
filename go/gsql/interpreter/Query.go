@@ -107,22 +107,16 @@ func NewFromQuery(query *l8api.L8Query, resources ifs.IResources) (*Query, error
 	}
 
 	// Initialize aggregate fields
-	fmt.Println("[DEBUG-L8QL] NewFromQuery: query.Aggregates length =", len(query.Aggregates))
 	if len(query.Aggregates) > 0 {
 		iQuery.isAggregate = true
 		iQuery.aggregates = query.Aggregates
 		iQuery.aggregateProps = make(map[string]*properties.Property)
 		for _, agg := range query.Aggregates {
-			fmt.Println("[DEBUG-L8QL] NewFromQuery: aggregate func=", agg.Function, "field=", agg.Field, "alias=", agg.Alias)
 			if agg.Field != "*" {
-				propPath := rootTable.TypeName + "." + agg.Field
-				fmt.Println("[DEBUG-L8QL] NewFromQuery: resolving PropertyOf:", propPath)
-				prop, er := properties.PropertyOf(propPath, resources)
+				prop, er := properties.PropertyOf(rootTable.TypeName+"."+agg.Field, resources)
 				if er != nil {
-					fmt.Println("[DEBUG-L8QL] NewFromQuery: PropertyOf FAILED:", er.Error())
 					return nil, errors.New(er.Error())
 				}
-				fmt.Println("[DEBUG-L8QL] NewFromQuery: PropertyOf succeeded for", propPath)
 				iQuery.aggregateProps[agg.Field] = prop
 			}
 		}
@@ -156,15 +150,11 @@ func NewFromQuery(query *l8api.L8Query, resources ifs.IResources) (*Query, error
 // NewQuery parses an L8QL query string and creates a new interpreted Query.
 // This is a convenience function that combines parsing and interpretation.
 func NewQuery(gsql string, resources ifs.IResources) (*Query, error) {
-	fmt.Println("[DEBUG-L8QL] NewQuery: parsing gsql =", gsql)
 	pQuery, err := parser.NewQuery(gsql, resources.Logger())
 	if err != nil {
-		fmt.Println("[DEBUG-L8QL] NewQuery: parser error:", err.Error())
 		return nil, err
 	}
-	pq := pQuery.Query()
-	fmt.Println("[DEBUG-L8QL] NewQuery: parsed OK, Aggregates length =", len(pq.Aggregates), "Properties =", pq.Properties, "Table =", pq.RootType)
-	return NewFromQuery(pq, resources)
+	return NewFromQuery(pQuery.Query(), resources)
 }
 
 // Query returns the underlying L8Query protobuf message.
