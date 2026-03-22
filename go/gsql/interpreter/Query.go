@@ -487,5 +487,8 @@ func (this *Query) GroupBy() []string {
 
 // Having returns the HAVING clause expression for filtering aggregated results.
 func (this *Query) Having() ifs.IExpression {
+	if this.having == nil {
+		return nil
+	}
 	return this.having
 }
