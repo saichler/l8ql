@@ -151,7 +151,7 @@ func getBoolTag(str, tag string) string {
 }
 
 func getTag(str, orig, tag string) string {
-	index := strings.Index(str, tag)
+	index := indexOfKeyword(str, tag, 0)
 	if index == -1 {
 		return ""
 	}
@@ -159,13 +159,39 @@ func getTag(str, orig, tag string) string {
 	index2 := len(str)
 	for _, t := range words {
 		if t != tag {
-			index3 := strings.Index(str, t)
+			index3 := indexOfKeyword(str, t, index)
 			if index3 > index && index3 < index2 {
 				index2 = index3
 			}
 		}
 	}
 	return strings.TrimSpace(orig[index:index2])
+}
+
+// indexOfKeyword returns the byte offset in str where keyword first appears as
+// a whole word at or after start, or -1 if not found. Without the word-boundary
+// check, identifiers that happen to contain a SQL keyword as a substring (e.g.
+// "k8slimitrange" containing "limit") are misparsed — the table name gets
+// truncated to "k8s" because the boundary search lands inside the identifier.
+func indexOfKeyword(str, keyword string, start int) int {
+	for start < len(str) {
+		idx := strings.Index(str[start:], keyword)
+		if idx == -1 {
+			return -1
+		}
+		abs := start + idx
+		beforeOk := abs == 0 || !isIdentChar(str[abs-1])
+		afterOk := abs+len(keyword) >= len(str) || !isIdentChar(str[abs+len(keyword)])
+		if beforeOk && afterOk {
+			return abs
+		}
+		start = abs + 1
+	}
+	return -1
+}
+
+func isIdentChar(c byte) bool {
+	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_'
 }
 
 func getSplitTag(str, orig, tag string) []string {
