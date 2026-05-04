@@ -492,3 +492,8 @@ func (this *Query) Having() ifs.IExpression {
 	}
 	return this.having
 }
+
+// Register returns true if the client opts into real-time change notifications.
+func (this *Query) Register() bool {
+	return this.query.Register
+}

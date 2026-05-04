@@ -235,3 +235,35 @@ func TestParseMapReduce(t *testing.T) {
 		return
 	}
 }
+
+func TestParseRegister(t *testing.T) {
+	q, e := NewQuery("select * from NetworkDevice limit 15 page 0 register=true", Log)
+	if e != nil {
+		Log.Fail(t, e)
+		return
+	}
+	if !q.Query().Register {
+		Log.Fail(t, "Expected Register to be true")
+		return
+	}
+	if q.Query().Limit != 15 {
+		Log.Fail(t, "Expected limit to be 15")
+		return
+	}
+	if q.Query().Page != 0 {
+		Log.Fail(t, "Expected page to be 0")
+		return
+	}
+}
+
+func TestParseRegisterAbsent(t *testing.T) {
+	q, e := NewQuery("select * from NetworkDevice limit 15 page 0", Log)
+	if e != nil {
+		Log.Fail(t, e)
+		return
+	}
+	if q.Query().Register {
+		Log.Fail(t, "Expected Register to be false when not specified")
+		return
+	}
+}

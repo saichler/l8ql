@@ -174,3 +174,27 @@ func TestValueOf(t *testing.T) {
 		Log.Fail(t, "V2 does not match")
 	}
 }
+
+func TestInterpreterRegister(t *testing.T) {
+	q, _, e := createQuery("select * from testproto where mystring=hello register=true")
+	if e != nil {
+		Log.Fail(t, e)
+		return
+	}
+	if !q.Register() {
+		Log.Fail(t, "Expected Register() to return true")
+		return
+	}
+}
+
+func TestInterpreterRegisterAbsent(t *testing.T) {
+	q, _, e := createQuery("select * from testproto where mystring=hello")
+	if e != nil {
+		Log.Fail(t, e)
+		return
+	}
+	if q.Register() {
+		Log.Fail(t, "Expected Register() to return false when not specified")
+		return
+	}
+}

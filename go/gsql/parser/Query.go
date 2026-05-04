@@ -64,6 +64,7 @@ type parsed struct {
 	mapreduce_  string
 	groupby_    string
 	having_     string
+	register_   string
 }
 
 // Query clause keywords used for parsing L8QL query strings.
@@ -80,10 +81,11 @@ const (
 	MapReduce  = "mapreduce"  // MAPREDUCE keyword for enabling map-reduce mode
 	GroupBy    = "group-by"   // GROUP-BY clause keyword for aggregation grouping
 	Having     = "having"     // HAVING clause keyword for filtering aggregate results
+	Register   = "register"   // REGISTER keyword for real-time change notifications
 )
 
 // words contains all query keywords used for parsing clause boundaries.
-var words = []string{Select, From, Where, SortBy, Descending, Ascending, Limit, Page, MatchCase, MapReduce, GroupBy, Having}
+var words = []string{Select, From, Where, SortBy, Descending, Ascending, Limit, Page, MatchCase, MapReduce, GroupBy, Having, Register}
 
 // Query returns a pointer to the underlying L8Query protobuf message
 // that was parsed from the query string.
@@ -139,6 +141,7 @@ func (this *PQuery) split() *parsed {
 	data.mapreduce_ = getBoolTag(sql, MapReduce)
 	data.groupby_ = getTag(sql, this.pquery.Text, GroupBy)
 	data.having_ = getTag(sql, this.pquery.Text, Having)
+	data.register_ = getBoolTag(sql, Register)
 	return data
 }
 
@@ -251,6 +254,9 @@ func (this *PQuery) init() error {
 	}
 	if p.mapreduce_ == "true" {
 		this.pquery.MapReduce = true
+	}
+	if p.register_ == "true" {
+		this.pquery.Register = true
 	}
 
 	// Parse GROUP BY clause
