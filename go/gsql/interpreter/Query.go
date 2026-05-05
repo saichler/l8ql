@@ -497,3 +497,11 @@ func (this *Query) Having() ifs.IExpression {
 func (this *Query) Register() bool {
 	return this.query.Register
 }
+
+func (this *Query) AAAId() string {
+	return this.query.AaaId
+}
+
+func (this *Query) SetAAAId(aaaId string) {
+	this.query.AaaId = aaaId
+}
