@@ -52,6 +52,15 @@ func (in *IN) Compare(left, right interface{}) bool {
 
 // inStringMatcher checks if a string value is in a list of strings.
 func inStringMatcher(left, right interface{}) bool {
+	vLeft := reflect.ValueOf(left)
+	if vLeft.Kind() == reflect.Slice {
+		for i := 0; i < vLeft.Len(); i++ {
+			if inStringMatcher(vLeft.Index(i).Interface(), right) {
+				return true
+			}
+		}
+		return false
+	}
 	aside := removeSingleQuote(strings.ToLower(left.(string)))
 	zsideList := strings.ToLower(right.(string))
 	values := getInStringList(zsideList)
@@ -65,6 +74,15 @@ func inStringMatcher(left, right interface{}) bool {
 
 // inIntMatcher checks if a signed integer value is in a list of integers.
 func inIntMatcher(left, right interface{}) bool {
+	vLeft := reflect.ValueOf(left)
+	if vLeft.Kind() == reflect.Slice {
+		for i := 0; i < vLeft.Len(); i++ {
+			if inIntMatcher(vLeft.Index(i).Interface(), right) {
+				return true
+			}
+		}
+		return false
+	}
 	aside, ok := getInt64(left)
 	if !ok {
 		return false
@@ -87,6 +105,15 @@ func inIntMatcher(left, right interface{}) bool {
 
 // inUintMatcher checks if an unsigned integer value is in a list of integers.
 func inUintMatcher(left, right interface{}) bool {
+	vLeft := reflect.ValueOf(left)
+	if vLeft.Kind() == reflect.Slice {
+		for i := 0; i < vLeft.Len(); i++ {
+			if inUintMatcher(vLeft.Index(i).Interface(), right) {
+				return true
+			}
+		}
+		return false
+	}
 	aside, ok := getUint64(left)
 	if !ok {
 		return false

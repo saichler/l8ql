@@ -50,6 +50,15 @@ func (gteq *GreaterThanOrEqual) Compare(left, right interface{}) bool {
 
 // gteqStringMatcher compares two string values lexicographically.
 func gteqStringMatcher(left, right interface{}) bool {
+	vLeft := reflect.ValueOf(left)
+	if vLeft.Kind() == reflect.Slice {
+		for i := 0; i < vLeft.Len(); i++ {
+			if gteqStringMatcher(vLeft.Index(i).Interface(), right) {
+				return true
+			}
+		}
+		return false
+	}
 	aside := removeSingleQuote(strings.ToLower(left.(string)))
 	zside := removeSingleQuote(strings.ToLower(right.(string)))
 	return aside >= zside
@@ -57,6 +66,15 @@ func gteqStringMatcher(left, right interface{}) bool {
 
 // gteqIntMatcher compares signed integer values.
 func gteqIntMatcher(left, right interface{}) bool {
+	vLeft := reflect.ValueOf(left)
+	if vLeft.Kind() == reflect.Slice {
+		for i := 0; i < vLeft.Len(); i++ {
+			if gteqIntMatcher(vLeft.Index(i).Interface(), right) {
+				return true
+			}
+		}
+		return false
+	}
 	aside, ok := getInt64(left)
 	if !ok {
 		return false
@@ -70,6 +88,15 @@ func gteqIntMatcher(left, right interface{}) bool {
 
 // gteqUintMatcher compares unsigned integer values.
 func gteqUintMatcher(left, right interface{}) bool {
+	vLeft := reflect.ValueOf(left)
+	if vLeft.Kind() == reflect.Slice {
+		for i := 0; i < vLeft.Len(); i++ {
+			if gteqUintMatcher(vLeft.Index(i).Interface(), right) {
+				return true
+			}
+		}
+		return false
+	}
 	aside, ok := getUint64(left)
 	if !ok {
 		return false

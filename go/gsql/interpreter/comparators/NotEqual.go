@@ -50,6 +50,15 @@ func (notequal *NotEqual) Compare(left, right interface{}) bool {
 
 // noteqStringMatcher compares two string values for inequality.
 func noteqStringMatcher(left, right interface{}) bool {
+	vLeft := reflect.ValueOf(left)
+	if vLeft.Kind() == reflect.Slice {
+		for i := 0; i < vLeft.Len(); i++ {
+			if !noteqStringMatcher(vLeft.Index(i).Interface(), right) {
+				return false
+			}
+		}
+		return true
+	}
 	aside := removeSingleQuote(strings.ToLower(left.(string)))
 	zside := removeSingleQuote(strings.ToLower(right.(string)))
 	return aside != zside
@@ -57,6 +66,15 @@ func noteqStringMatcher(left, right interface{}) bool {
 
 // noteqIntMatcher compares signed integer values for inequality.
 func noteqIntMatcher(left, right interface{}) bool {
+	vLeft := reflect.ValueOf(left)
+	if vLeft.Kind() == reflect.Slice {
+		for i := 0; i < vLeft.Len(); i++ {
+			if !noteqIntMatcher(vLeft.Index(i).Interface(), right) {
+				return false
+			}
+		}
+		return true
+	}
 	aside, ok := getInt64(left)
 	if !ok {
 		return false
@@ -70,6 +88,15 @@ func noteqIntMatcher(left, right interface{}) bool {
 
 // noteqUintMatcher compares unsigned integer values for inequality.
 func noteqUintMatcher(left, right interface{}) bool {
+	vLeft := reflect.ValueOf(left)
+	if vLeft.Kind() == reflect.Slice {
+		for i := 0; i < vLeft.Len(); i++ {
+			if !noteqUintMatcher(vLeft.Index(i).Interface(), right) {
+				return false
+			}
+		}
+		return true
+	}
 	aside, ok := getUint64(left)
 	if !ok {
 		return false

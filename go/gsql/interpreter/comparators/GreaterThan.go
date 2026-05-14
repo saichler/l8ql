@@ -50,6 +50,15 @@ func (gt *GreaterThan) Compare(left, right interface{}) bool {
 
 // gtStringMatcher compares two string values lexicographically.
 func gtStringMatcher(left, right interface{}) bool {
+	vLeft := reflect.ValueOf(left)
+	if vLeft.Kind() == reflect.Slice {
+		for i := 0; i < vLeft.Len(); i++ {
+			if gtStringMatcher(vLeft.Index(i).Interface(), right) {
+				return true
+			}
+		}
+		return false
+	}
 	aside := removeSingleQuote(strings.ToLower(left.(string)))
 	zside := removeSingleQuote(strings.ToLower(right.(string)))
 	return aside > zside
@@ -57,6 +66,15 @@ func gtStringMatcher(left, right interface{}) bool {
 
 // gtIntMatcher compares signed integer values.
 func gtIntMatcher(left, right interface{}) bool {
+	vLeft := reflect.ValueOf(left)
+	if vLeft.Kind() == reflect.Slice {
+		for i := 0; i < vLeft.Len(); i++ {
+			if gtIntMatcher(vLeft.Index(i).Interface(), right) {
+				return true
+			}
+		}
+		return false
+	}
 	aside, ok := getInt64(left)
 	if !ok {
 		return false
@@ -70,6 +88,15 @@ func gtIntMatcher(left, right interface{}) bool {
 
 // gtUintMatcher compares unsigned integer values.
 func gtUintMatcher(left, right interface{}) bool {
+	vLeft := reflect.ValueOf(left)
+	if vLeft.Kind() == reflect.Slice {
+		for i := 0; i < vLeft.Len(); i++ {
+			if gtUintMatcher(vLeft.Index(i).Interface(), right) {
+				return true
+			}
+		}
+		return false
+	}
 	aside, ok := getUint64(left)
 	if !ok {
 		return false

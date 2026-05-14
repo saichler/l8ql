@@ -52,6 +52,15 @@ func (in *NotIN) Compare(left, right interface{}) bool {
 
 // notinStringMatcher checks if a string value is NOT in a list of strings.
 func notinStringMatcher(left, right interface{}) bool {
+	vLeft := reflect.ValueOf(left)
+	if vLeft.Kind() == reflect.Slice {
+		for i := 0; i < vLeft.Len(); i++ {
+			if !notinStringMatcher(vLeft.Index(i).Interface(), right) {
+				return false
+			}
+		}
+		return true
+	}
 	aside := removeSingleQuote(strings.ToLower(left.(string)))
 	zsideList := strings.ToLower(right.(string))
 	values := getInStringList(zsideList)
@@ -65,6 +74,15 @@ func notinStringMatcher(left, right interface{}) bool {
 
 // notinIntMatcher checks if a signed integer value is NOT in a list of integers.
 func notinIntMatcher(left, right interface{}) bool {
+	vLeft := reflect.ValueOf(left)
+	if vLeft.Kind() == reflect.Slice {
+		for i := 0; i < vLeft.Len(); i++ {
+			if !notinIntMatcher(vLeft.Index(i).Interface(), right) {
+				return false
+			}
+		}
+		return true
+	}
 	aside, ok := getInt64(left)
 	if !ok {
 		return true
@@ -87,6 +105,15 @@ func notinIntMatcher(left, right interface{}) bool {
 
 // notinUintMatcher checks if an unsigned integer value is NOT in a list of integers.
 func notinUintMatcher(left, right interface{}) bool {
+	vLeft := reflect.ValueOf(left)
+	if vLeft.Kind() == reflect.Slice {
+		for i := 0; i < vLeft.Len(); i++ {
+			if !notinUintMatcher(vLeft.Index(i).Interface(), right) {
+				return false
+			}
+		}
+		return true
+	}
 	aside, ok := getUint64(left)
 	if !ok {
 		return true

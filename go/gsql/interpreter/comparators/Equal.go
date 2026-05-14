@@ -132,6 +132,15 @@ func eqPtrMatcher(left, right interface{}) bool {
 
 // eqIntMatcher compares signed integer values for equality.
 func eqIntMatcher(left, right interface{}) bool {
+	vLeft := reflect.ValueOf(left)
+	if vLeft.Kind() == reflect.Slice {
+		for i := 0; i < vLeft.Len(); i++ {
+			if eqIntMatcher(vLeft.Index(i).Interface(), right) {
+				return true
+			}
+		}
+		return false
+	}
 	aside, aok := getInt64(left)
 	zside, zok := getInt64(right)
 
@@ -154,6 +163,15 @@ func eqIntMatcher(left, right interface{}) bool {
 
 // eqUintMatcher compares unsigned integer values for equality.
 func eqUintMatcher(left, right interface{}) bool {
+	vLeft := reflect.ValueOf(left)
+	if vLeft.Kind() == reflect.Slice {
+		for i := 0; i < vLeft.Len(); i++ {
+			if eqUintMatcher(vLeft.Index(i).Interface(), right) {
+				return true
+			}
+		}
+		return false
+	}
 	aside, ok := getUint64(left)
 	if !ok {
 		return false
@@ -212,6 +230,9 @@ func getKind(aside, zside interface{}) reflect.Kind {
 // Handles both numeric types and string representations of integers.
 func getInt64(v interface{}) (int64, bool) {
 	value := reflect.ValueOf(v)
+	if value.Kind() == reflect.Slice {
+		return 0, false
+	}
 	if value.Kind() != reflect.String {
 		return value.Int(), true
 	} else {
@@ -227,6 +248,9 @@ func getInt64(v interface{}) (int64, bool) {
 // Handles both numeric types and string representations of integers.
 func getUint64(v interface{}) (uint64, bool) {
 	value := reflect.ValueOf(v)
+	if value.Kind() == reflect.Slice {
+		return 0, false
+	}
 	if value.Kind() != reflect.String {
 		return value.Uint(), true
 	} else {
@@ -248,6 +272,15 @@ func GetWildCardSubstrings(str string) []string {
 }
 
 func eqBoolMatcher(left, right interface{}) bool {
+	vLeft := reflect.ValueOf(left)
+	if vLeft.Kind() == reflect.Slice {
+		for i := 0; i < vLeft.Len(); i++ {
+			if eqBoolMatcher(vLeft.Index(i).Interface(), right) {
+				return true
+			}
+		}
+		return false
+	}
 	aside, aok := getBool(left)
 	zside, zok := getBool(right)
 
@@ -270,6 +303,9 @@ func eqBoolMatcher(left, right interface{}) bool {
 
 func getBool(v interface{}) (bool, bool) {
 	value := reflect.ValueOf(v)
+	if value.Kind() == reflect.Slice {
+		return false, false
+	}
 	if value.Kind() != reflect.String {
 		return value.Bool(), true
 	} else {
