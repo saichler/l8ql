@@ -24,8 +24,6 @@ package interpreter
 
 import (
 	"bytes"
-	"crypto/md5"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"reflect"
@@ -367,13 +365,15 @@ func (this *Query) MapReduce() bool {
 	return this.query.MapReduce
 }
 
-// Hash returns an MD5 hash of the query for caching and deduplication.
+// Hash returns an int32 hash of the query for caching and deduplication.
 // The hash is based on the normalized query text (trimmed and lowercased).
-func (this *Query) Hash() string {
+func (this *Query) Hash() int32 {
 	text := strings.TrimSpace(strings.ToLower(this.Text()))
-	h := md5.New()
-	h.Write([]byte(text))
-	return hex.EncodeToString(h.Sum(nil))
+	var h int32
+	for _, c := range text {
+		h = 31*h + int32(c)
+	}
+	return h
 }
 
 // ValueForParameter searches the WHERE clause for a comparator that references
