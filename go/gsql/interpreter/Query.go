@@ -366,11 +366,17 @@ func (this *Query) MapReduce() bool {
 }
 
 // Hash returns an int32 hash of the query for caching and deduplication.
-// The hash is based on the normalized query text (trimmed and lowercased).
+// The hash is based on the normalized query text (trimmed and lowercased)
+// plus the caller's AAAId, so two identically-worded queries issued by
+// different callers (e.g. a per-user-scoped query) never collide on the
+// same hash.
 func (this *Query) Hash() int32 {
 	text := strings.TrimSpace(strings.ToLower(this.Text()))
 	var h int32
 	for _, c := range text {
+		h = 31*h + int32(c)
+	}
+	for _, c := range this.AAAId() {
 		h = 31*h + int32(c)
 	}
 	return h
