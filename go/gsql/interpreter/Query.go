@@ -235,8 +235,11 @@ func (this *Query) SortBy() string {
 func (this *Query) initTables(query *l8api.L8Query) error {
 	node, ok := this.resources.Introspector().Node(query.RootType)
 	if !ok {
-		return this.resources.Logger().Error("Cannot find node for table ", query.RootType,
-			"\nstack:\n", string(debug.Stack()), this.resources.SysConfig().LocalAlias)
+		return this.resources.Logger().Error("Cannot find node for table Alias:",
+			this.resources.SysConfig().LocalAlias,
+			"UUID:", this.resources.SysConfig().LocalUuid,
+			"Root Type:", query.RootType,
+			"\nstack:\n", string(debug.Stack()))
 	}
 	this.rootType = node
 	return nil
