@@ -41,24 +41,24 @@ import (
 // It holds all the parsed and resolved components needed for query execution,
 // including the root type, property mappings, filter expressions, and query options.
 type Query struct {
-	rootType       *l8reflect.L8Node        // The root type node from the introspector
-	propertiesMap  map[string]ifs.IProperty // Map of property names to property accessors
-	properties     []ifs.IProperty          // Ordered list of selected properties
-	where          *Expression              // The WHERE clause expression for filtering
-	sortBy         string                   // Property name to sort results by
-	sortByProperty *properties.Property     // Resolved sort property accessor
-	descending     bool                     // Sort in descending order if true
-	limit          int32                    // Maximum number of results
-	page           int32                    // Page number for pagination
-	matchCase      bool                     // Case-sensitive matching if true
-	resources      ifs.IResources           // Resources for logging and introspection
-	query          *l8api.L8Query           // The original parsed query
-	groupBy        []string                 // Group-by field names
-	groupByProps   []*properties.Property   // Resolved group-by properties
-	aggregates     []*l8api.L8AggregateFunction // Parsed aggregate functions
+	rootType       *l8reflect.L8Node               // The root type node from the introspector
+	propertiesMap  map[string]ifs.IProperty        // Map of property names to property accessors
+	properties     []ifs.IProperty                 // Ordered list of selected properties
+	where          *Expression                     // The WHERE clause expression for filtering
+	sortBy         string                          // Property name to sort results by
+	sortByProperty *properties.Property            // Resolved sort property accessor
+	descending     bool                            // Sort in descending order if true
+	limit          int32                           // Maximum number of results
+	page           int32                           // Page number for pagination
+	matchCase      bool                            // Case-sensitive matching if true
+	resources      ifs.IResources                  // Resources for logging and introspection
+	query          *l8api.L8Query                  // The original parsed query
+	groupBy        []string                        // Group-by field names
+	groupByProps   []*properties.Property          // Resolved group-by properties
+	aggregates     []*l8api.L8AggregateFunction    // Parsed aggregate functions
 	aggregateProps map[string]*properties.Property // Field -> property for aggregated fields
-	having         *Expression              // HAVING clause expression
-	isAggregate    bool                     // True if query has aggregate functions
+	having         *Expression                     // HAVING clause expression
+	isAggregate    bool                            // True if query has aggregate functions
 }
 
 // NewFromQuery creates a new interpreted Query from a parsed L8Query protobuf message.
@@ -236,7 +236,7 @@ func (this *Query) initTables(query *l8api.L8Query) error {
 	node, ok := this.resources.Introspector().Node(query.RootType)
 	if !ok {
 		return this.resources.Logger().Error("Cannot find node for table ", query.RootType,
-			"\nstack:\n", string(debug.Stack()))
+			"\nstack:\n", string(debug.Stack()), this.resources.SysConfig().LocalAlias)
 	}
 	this.rootType = node
 	return nil
