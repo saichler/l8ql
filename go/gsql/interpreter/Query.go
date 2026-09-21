@@ -27,6 +27,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"runtime/debug"
 	"strings"
 
 	"github.com/saichler/l8ql/go/gsql/parser"
@@ -234,7 +235,8 @@ func (this *Query) SortBy() string {
 func (this *Query) initTables(query *l8api.L8Query) error {
 	node, ok := this.resources.Introspector().Node(query.RootType)
 	if !ok {
-		return this.resources.Logger().Error("Cannot find node for table ", query.RootType)
+		return this.resources.Logger().Error("Cannot find node for table ", query.RootType,
+			"\nstack:\n", string(debug.Stack()))
 	}
 	this.rootType = node
 	return nil
