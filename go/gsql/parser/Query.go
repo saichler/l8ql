@@ -205,7 +205,10 @@ func getSplitTag(str, orig, tag string) []string {
 	}
 	split := strings.Split(data, ",")
 	for _, t := range split {
-		result = append(result, t)
+		t = strings.TrimSpace(t)
+		if t != "" {
+			result = append(result, t)
+		}
 	}
 	return result
 }

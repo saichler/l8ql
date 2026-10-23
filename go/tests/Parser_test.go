@@ -35,6 +35,17 @@ func TestQuery01(t *testing.T) {
 	testExpression(q, "(1=2)", t)
 }
 
+// TestQuerySpacedColumns tests that whitespace around select columns is ignored.
+func TestQuerySpacedColumns(t *testing.T) {
+	q, e := NewQuery("select column1, column2 ,  column3 from table1 where 1=2", Log)
+	if e != nil {
+		Log.Fail(t, e)
+		return
+	}
+	testTables(q, "table1", t)
+	testColumns(q, []string{"column1", "column2", "column3"}, t)
+}
+
 func TestQuery02(t *testing.T) {
 	q, e := NewQuery("Select column1 fRom table1 wHere 1=2", Log)
 	if e != nil {
