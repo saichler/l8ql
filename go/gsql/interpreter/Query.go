@@ -504,9 +504,15 @@ func (this *Query) Having() ifs.IExpression {
 	return this.having
 }
 
-// Register returns true if the client opts into real-time change notifications.
-func (this *Query) Register() bool {
+// Register returns the query's registration action for real-time change
+// notifications (L8_REGISTER_INVALID when it neither registers nor unregisters).
+func (this *Query) Register() l8api.L8Register {
 	return this.query.Register
+}
+
+// RegisterId returns the id of the client component that owns the registration.
+func (this *Query) RegisterId() string {
+	return this.query.RegisterId
 }
 
 func (this *Query) AAAId() string {

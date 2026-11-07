@@ -22,6 +22,7 @@ import (
 
 	. "github.com/saichler/l8test/go/infra/t_resources"
 	"github.com/saichler/l8types/go/testtypes"
+	"github.com/saichler/l8types/go/types/l8api"
 )
 
 // TestQueryValidation tests that complex queries with nested conditions parse correctly.
@@ -181,8 +182,8 @@ func TestInterpreterRegister(t *testing.T) {
 		Log.Fail(t, e)
 		return
 	}
-	if !q.Register() {
-		Log.Fail(t, "Expected Register() to return true")
+	if q.Register() != l8api.L8Register_L8_REGISTER_REGISTER {
+		Log.Fail(t, "Expected Register() to return Register")
 		return
 	}
 }
@@ -193,8 +194,8 @@ func TestInterpreterRegisterAbsent(t *testing.T) {
 		Log.Fail(t, e)
 		return
 	}
-	if q.Register() {
-		Log.Fail(t, "Expected Register() to return false when not specified")
+	if q.Register() != l8api.L8Register_L8_REGISTER_INVALID {
+		Log.Fail(t, "Expected Register() to return Invalid when not specified")
 		return
 	}
 }

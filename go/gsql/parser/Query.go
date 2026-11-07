@@ -141,7 +141,12 @@ func (this *PQuery) split() *parsed {
 	data.mapreduce_ = getBoolTag(sql, MapReduce)
 	data.groupby_ = getTag(sql, this.pquery.Text, GroupBy)
 	data.having_ = getTag(sql, this.pquery.Text, Having)
-	data.register_ = getBoolTag(sql, Register)
+	if indexOfKeyword(sql, Register, 0) != -1 {
+		data.register_ = strings.TrimSpace(strings.TrimPrefix(getTag(sql, sql, Register), "="))
+		if data.register_ == "" {
+			data.register_ = "true"
+		}
+	}
 	return data
 }
 
@@ -258,8 +263,18 @@ func (this *PQuery) init() error {
 	if p.mapreduce_ == "true" {
 		this.pquery.MapReduce = true
 	}
-	if p.register_ == "true" {
-		this.pquery.Register = true
+	// "register" in the text: "register=true" (or a bare "register") and
+	// "register=register" register; "register=unregister" unregisters.
+	switch p.register_ {
+	case "":
+	case "true", "register":
+		this.pquery.Register = l8api.L8Register_L8_REGISTER_REGISTER
+	case "unregister":
+		this.pquery.Register = l8api.L8Register_L8_REGISTER_UNREGISTER
+	case "false":
+		this.pquery.Register = l8api.L8Register_L8_REGISTER_INVALID
+	default:
+		return this.log.Error("Invalid register:", p.register_, ": expected register or unregister")
 	}
 
 	// Parse GROUP BY clause

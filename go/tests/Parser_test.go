@@ -21,6 +21,7 @@ import (
 
 	. "github.com/saichler/l8ql/go/gsql/parser"
 	. "github.com/saichler/l8test/go/infra/t_resources"
+	"github.com/saichler/l8types/go/types/l8api"
 )
 
 // TestQuery01 tests basic query parsing with SELECT, FROM, and WHERE clauses.
@@ -253,8 +254,8 @@ func TestParseRegister(t *testing.T) {
 		Log.Fail(t, e)
 		return
 	}
-	if !q.Query().Register {
-		Log.Fail(t, "Expected Register to be true")
+	if q.Query().Register != l8api.L8Register_L8_REGISTER_REGISTER {
+		Log.Fail(t, "Expected register=true to parse as Register")
 		return
 	}
 	if q.Query().Limit != 15 {
@@ -273,8 +274,37 @@ func TestParseRegisterAbsent(t *testing.T) {
 		Log.Fail(t, e)
 		return
 	}
-	if q.Query().Register {
-		Log.Fail(t, "Expected Register to be false when not specified")
+	if q.Query().Register != l8api.L8Register_L8_REGISTER_INVALID {
+		Log.Fail(t, "Expected Register to be Invalid when not specified")
 		return
+	}
+}
+
+// TestParseRegisterValues covers every register value and that the register
+// keyword ends the preceding clause (page) rather than being swallowed by it.
+func TestParseRegisterValues(t *testing.T) {
+	cases := map[string]l8api.L8Register{
+		"register":            l8api.L8Register_L8_REGISTER_REGISTER,
+		"register=register":   l8api.L8Register_L8_REGISTER_REGISTER,
+		"register=unregister": l8api.L8Register_L8_REGISTER_UNREGISTER,
+		"register=false":      l8api.L8Register_L8_REGISTER_INVALID,
+	}
+	for tag, want := range cases {
+		q, e := NewQuery("select * from NetworkDevice limit 15 page 2 "+tag, Log)
+		if e != nil {
+			Log.Fail(t, tag, ": ", e)
+			return
+		}
+		if q.Query().Register != want {
+			Log.Fail(t, tag, ": got ", q.Query().Register, " want ", want)
+			return
+		}
+		if q.Query().Page != 2 {
+			Log.Fail(t, tag, ": page parsed as ", q.Query().Page)
+			return
+		}
+	}
+	if _, e := NewQuery("select * from NetworkDevice register=maybe", Log); e == nil {
+		Log.Fail(t, "Expected an error for register=maybe")
 	}
 }
