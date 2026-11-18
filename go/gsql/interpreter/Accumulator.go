@@ -42,7 +42,8 @@ func NewAccumulator(fn string) *Accumulator {
 
 // Add incorporates a value into the accumulator.
 // For count(*), pass nil to count all records.
-// Handles int32, int64, float32, float64 value types.
+// Handles every Go integer and float type (protobuf int32/int64/uint32/uint64,
+// float, double); other values are ignored.
 func (a *Accumulator) Add(value interface{}) {
 	a.count++
 
@@ -103,6 +104,20 @@ func toFloat64(value interface{}) (float64, bool) {
 	case float64:
 		return v, true
 	case int:
+		return float64(v), true
+	case uint32: // protobuf uint32 / fixed32
+		return float64(v), true
+	case uint64: // protobuf uint64 / fixed64
+		return float64(v), true
+	case uint:
+		return float64(v), true
+	case int8:
+		return float64(v), true
+	case int16:
+		return float64(v), true
+	case uint8:
+		return float64(v), true
+	case uint16:
 		return float64(v), true
 	}
 	return 0, false
